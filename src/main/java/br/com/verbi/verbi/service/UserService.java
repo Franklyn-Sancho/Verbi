@@ -9,8 +9,11 @@ import br.com.verbi.verbi.entity.User;
 
 import br.com.verbi.verbi.repository.UserRepository;
 
+import java.time.LocalDateTime;
+
 import java.util.Optional;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -22,13 +25,24 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
 
     public User registerUser(String name, String email, String password) {
-        User user = new User();
-        user.setName(name);
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(password)); // Codifica a senha
+    User newUser = new User();
+    newUser.setName(name);
+    newUser.setEmail(email);
+    newUser.setPassword(passwordEncoder.encode(password));
 
-        return userRepository.save(user);
-    }
+    // Gera o token de confirmação de e-mail
+    String emailConfirmationToken = UUID.randomUUID().toString();
+    newUser.setEmailConfirmationToken(emailConfirmationToken);
+
+    // Define o tempo de expiração do token (ex: 1 hora a partir de agora)
+    LocalDateTime tokenExpiryDate = LocalDateTime.now().plusHours(1);
+    newUser.setEmailConfirmationExpires(tokenExpiryDate);
+
+    // Salva o usuário no banco de dados
+    userRepository.save(newUser);
+
+    return newUser;
+}
 
     public boolean authenticateUser(String email, String password) {
         User user = userRepository.findByEmail(email).orElse(null);

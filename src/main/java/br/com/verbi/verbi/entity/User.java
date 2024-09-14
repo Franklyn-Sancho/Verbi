@@ -14,20 +14,23 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.util.HashSet;
 
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
 public class User {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String name;
     private String email;
-    private String password; // Senha para autenticação via email
-    private String googleId; // Campo para armazenar o ID do Google se o usuário logar via Google
+    private String password; 
+    private String googleId; 
     private String description;
+    private String emailConfirmationToken;
+    private LocalDateTime emailConfirmationExpires;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
@@ -89,5 +92,21 @@ public class User {
 
     public void setMurals(Set<Mural> murals) {
         this.murals = murals;
+    }
+
+    public String getEmailConfirmationToken() {
+        return emailConfirmationToken;
+    }
+
+    public void setEmailConfirmationToken(String emailConfirmationToken) {
+        this.emailConfirmationToken = emailConfirmationToken;
+    }
+
+    public LocalDateTime getEmailConfirmationExpires() {
+        return emailConfirmationExpires;
+    }
+
+    public void setEmailConfirmationExpires(LocalDateTime emailConfirmationExpires) {
+        this.emailConfirmationExpires = emailConfirmationExpires;
     }
 }

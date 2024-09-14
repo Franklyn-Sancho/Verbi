@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.verbi.verbi.dto.UserDto;
 import br.com.verbi.verbi.entity.User;
+import br.com.verbi.verbi.service.EmailQueueService;
+import br.com.verbi.verbi.service.EmailService;
 import br.com.verbi.verbi.service.UserService;
 
 import java.util.Optional;
@@ -27,6 +29,12 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private EmailQueueService emailQueueService;
+
+    @Autowired
+    private EmailService emailService;
+
     @PostMapping("/register")
     public ResponseEntity<User> createUser(@RequestBody UserDto userDto) {
         // Cria o usuário
@@ -36,8 +44,9 @@ public class UserController {
             userDto.getPassword() // Passa a senha para o serviço de usuário
         );
 
-        // No AuthService, você pode configurar a lógica para gerar um token se necessário
-        // Por exemplo: String token = authService.generateToken(newUser);
+        String confirmationLink = "http://localhost:3333/confirm-email/" + userDto.getemailConfirmationToken();
+
+        emailService.sendConfirmationEmail(newUser, confirmationLink);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
     }

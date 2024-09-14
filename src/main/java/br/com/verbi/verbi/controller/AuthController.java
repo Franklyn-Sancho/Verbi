@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.verbi.verbi.dto.LoginDto;
 import br.com.verbi.verbi.security.JWTGenerator;
+import br.com.verbi.verbi.service.EmailQueueService;
 import br.com.verbi.verbi.service.UserService;
 
 @RestController

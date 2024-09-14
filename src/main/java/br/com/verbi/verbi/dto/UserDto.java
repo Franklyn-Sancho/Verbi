@@ -3,8 +3,10 @@ package br.com.verbi.verbi.dto;
 public class UserDto {
     private String name;
     private String email;
-    private String description; // Opcional
-    private String password; // Senha fornecida pelo cliente
+    private String description; 
+    private String password; 
+    private String emailConfirmationToken;
+    private String emailConfirmationExpires;
 
     // Getters e Setters
     public String getName() {
@@ -37,6 +39,22 @@ public class UserDto {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getemailConfirmationToken() {
+        return emailConfirmationToken;
+    }
+
+    public void setemailConfirmationToken(String emailConfirmationToken) {
+        this.emailConfirmationToken = emailConfirmationToken;
+    }
+
+    public String getemailConfirmationExpires() {
+        return emailConfirmationExpires;
+    }
+
+    public void setemailConfirmationExpires(String emailConfirmationExpires) {
+        this.emailConfirmationExpires = emailConfirmationExpires;
     }
 }
 
