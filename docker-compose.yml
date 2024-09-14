@@ -9,7 +9,8 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       SPRING_RABBITMQ_HOST: rabbitmq
-      MAILHOG_URL: smtp://mailhog:1025
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
     volumes:
       - .:/app  # Monta o diretório local na aplicação
     depends_on:
@@ -29,7 +30,7 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_NAME: ${SPRING_DATASOURCE_USERNAME}
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
       POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       POSTGRES_DB: verbidb
     volumes:
