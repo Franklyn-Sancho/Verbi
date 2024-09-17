@@ -5,6 +5,8 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 import br.com.verbi.verbi.entity.Mural;
 import br.com.verbi.verbi.entity.User;
 import br.com.verbi.verbi.repository.MuralRepository;
@@ -19,7 +21,7 @@ public class MuralService {
     public Mural createMural(String body, User user) {
 
         Mural mural = new Mural();
-
+        mural.setId(UUID.randomUUID());
         mural.setBody(body);
         mural.setUser(user);
 

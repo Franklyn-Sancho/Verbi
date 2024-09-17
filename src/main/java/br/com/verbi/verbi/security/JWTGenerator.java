@@ -15,10 +15,10 @@ import javax.crypto.SecretKey;
 @Component
 public class JWTGenerator {
 
-    @Value("${jwt.secret}")
+    @Value("${JWT_SECRET}")
     private String jwtSecret;
 
-    @Value("${jwt.expiration}")
+    @Value("${JWT_EXPIRATION}")
     private long jwtExpirationDate;
 
     public String generateToken(String email) {

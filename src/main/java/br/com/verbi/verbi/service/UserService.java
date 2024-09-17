@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.verbi.verbi.dto.UserDto;
 import br.com.verbi.verbi.entity.User;
-
+import br.com.verbi.verbi.exception.EmailAlreadyExistsException;
 import br.com.verbi.verbi.repository.UserRepository;
 
 import java.time.LocalDateTime;
@@ -25,24 +25,49 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
 
     public User registerUser(String name, String email, String password) {
-    User newUser = new User();
-    newUser.setName(name);
-    newUser.setEmail(email);
-    newUser.setPassword(passwordEncoder.encode(password));
+        Optional<User> existingUser = userRepository.findByEmail(email);
 
-    // Gera o token de confirmação de e-mail
-    String emailConfirmationToken = UUID.randomUUID().toString();
-    newUser.setEmailConfirmationToken(emailConfirmationToken);
+        if (existingUser.isPresent()) {
+            System.out.println("Email already exists: " + email);
+            throw new EmailAlreadyExistsException("An error occurred, please check your data.");
+        }
 
-    // Define o tempo de expiração do token (ex: 1 hora a partir de agora)
-    LocalDateTime tokenExpiryDate = LocalDateTime.now().plusHours(1);
-    newUser.setEmailConfirmationExpires(tokenExpiryDate);
+        User newUser = new User();
+        newUser.setId(UUID.randomUUID());
+        newUser.setName(name);
+        newUser.setEmail(email);
+        newUser.setPassword(passwordEncoder.encode(password));
 
-    // Salva o usuário no banco de dados
-    userRepository.save(newUser);
+        String emailConfirmationToken = UUID.randomUUID().toString();
+        newUser.setEmailConfirmationToken(emailConfirmationToken);
 
-    return newUser;
-}
+        LocalDateTime tokenExpiryDate = LocalDateTime.now().plusHours(1);
+        newUser.setEmailConfirmationExpires(tokenExpiryDate);
+
+        userRepository.save(newUser);
+
+        System.out.println("User saved successfully: " + newUser.getEmail());
+        return newUser;
+    }
+    
+
+    public User createUserFromOAuth2(String name, String email, String googleId) {
+        User user = userRepository.findByEmail(email).orElseGet(() -> {
+            User newUser = new User();
+            newUser.setName(name);
+            newUser.setEmail(email);
+            newUser.setGoogleId(googleId);
+            return userRepository.save(newUser);
+        });
+        
+        // Atualiza o googleId se necessário
+        if (user.getGoogleId() == null || !user.getGoogleId().equals(googleId)) {
+            user.setGoogleId(googleId);
+            userRepository.save(user);
+        }
+        
+        return user;
+    }
 
     public boolean authenticateUser(String email, String password) {
         User user = userRepository.findByEmail(email).orElse(null);

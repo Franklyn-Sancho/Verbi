@@ -10,6 +10,9 @@ import jakarta.persistence.Table;
 
 import java.util.Set;
 
+import org.hibernate.annotations.Type;
+import java.util.UUID;
+
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.util.HashSet;
@@ -21,11 +24,12 @@ import java.time.LocalDateTime;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
     private String name;
     private String email;
+    private String picture;
     private String password; 
     private String googleId; 
     private String description;
@@ -38,12 +42,12 @@ public class User {
 
     // Getters e Setters
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setId(UUID uuid) {
+        this.id = uuid;
     }
 
     public String getName() {
@@ -52,6 +56,14 @@ public class User {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getPicure() {
+        return picture;
+    }
+
+    public void setPicure(String picture) {
+        this.picture = picture;
     }
 
     public String getEmail() {

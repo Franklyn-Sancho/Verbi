@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.verbi.verbi.dto.UserDto;
 import br.com.verbi.verbi.entity.User;
+import br.com.verbi.verbi.exception.EmailAlreadyExistsException;
 import br.com.verbi.verbi.service.EmailQueueService;
 import br.com.verbi.verbi.service.EmailService;
 import br.com.verbi.verbi.service.UserService;
@@ -36,20 +37,31 @@ public class UserController {
     private EmailService emailService;
 
     @PostMapping("/register")
-    public ResponseEntity<User> createUser(@RequestBody UserDto userDto) {
-        // Cria o usuário
-        User newUser = userService.registerUser(
-            userDto.getName(), 
-            userDto.getEmail(), 
-            userDto.getPassword() // Passa a senha para o serviço de usuário
-        );
-
-        String confirmationLink = "http://localhost:3333/confirm-email/" + userDto.getemailConfirmationToken();
-
-        emailService.sendConfirmationEmail(newUser, confirmationLink);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
+    public ResponseEntity<?> createUser(@RequestBody UserDto userDto) {
+        try {
+            User newUser = userService.registerUser(
+                    userDto.getName(),
+                    userDto.getEmail(),
+                    userDto.getPassword());
+    
+            String confirmationLink = "http://localhost:3333/confirm-email/" + newUser.getEmailConfirmationToken();
+    
+            emailService.sendConfirmationEmail(newUser, confirmationLink);
+    
+            return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
+    
+        } catch (EmailAlreadyExistsException e) {
+            // Log the exception details
+            System.err.println("Error registering user: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            // Log the exception details
+            System.err.println("Unexpected error: " + e.getMessage());
+            e.printStackTrace(); // Adicione esta linha para imprimir o stack trace completo
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
+        }
     }
+    
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {

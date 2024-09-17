@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
-    public static final String EMAIL_QUEUE = "emailQueue";
+    public static final String EMAIL_QUEUE = "email-queue-verbi";
 
     @Bean
     public Queue emailQueue() {
