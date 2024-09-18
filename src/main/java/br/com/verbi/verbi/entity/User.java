@@ -10,7 +10,6 @@ import jakarta.persistence.Table;
 
 import java.util.Set;
 
-import org.hibernate.annotations.Type;
 import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;

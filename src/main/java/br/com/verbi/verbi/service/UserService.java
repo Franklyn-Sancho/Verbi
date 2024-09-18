@@ -77,7 +77,7 @@ public class UserService {
         return false;
     }
 
-    public Optional<User> findUserById(Long id) {
+    public Optional<User> findUserById(UUID id) {
         return userRepository.findById(id);
     }
 
@@ -89,7 +89,7 @@ public class UserService {
         return userRepository.findByNameContaining(name);
     }
 
-    public User updateUser(Long id, UserDto userDto) {
+    public User updateUser(UUID id, UserDto userDto) {
         return userRepository.findById(id).map(user -> {
             user.setName(userDto.getName());
             user.setEmail(userDto.getEmail());
@@ -103,7 +103,7 @@ public class UserService {
         }).orElseThrow(() -> new RuntimeException("User not found with id " + id));
     }
 
-    public void deleteUser(Long id) {
+    public void deleteUser(UUID id) {
         userRepository.deleteById(id);
     }
 }

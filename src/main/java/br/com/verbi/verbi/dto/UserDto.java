@@ -45,15 +45,15 @@ public class UserDto {
         return emailConfirmationToken;
     }
 
-    public void setemailConfirmationToken(String emailConfirmationToken) {
+    public void setEmailConfirmationToken(String emailConfirmationToken) {
         this.emailConfirmationToken = emailConfirmationToken;
     }
 
-    public String getemailConfirmationExpires() {
+    public String getEmailConfirmationExpires() {
         return emailConfirmationExpires;
     }
 
-    public void setemailConfirmationExpires(String emailConfirmationExpires) {
+    public void setEmailConfirmationExpires(String emailConfirmationExpires) {
         this.emailConfirmationExpires = emailConfirmationExpires;
     }
 }
