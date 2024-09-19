@@ -3,6 +3,7 @@ package br.com.verbi.verbi.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,13 +45,13 @@ public class UserController {
                     userDto.getName(),
                     userDto.getEmail(),
                     userDto.getPassword());
-    
+
             String confirmationLink = "http://localhost:3333/confirm-email/" + newUser.getEmailConfirmationToken();
-    
+
             emailService.sendConfirmationEmail(newUser, confirmationLink);
-    
+
             return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
-    
+
         } catch (EmailAlreadyExistsException e) {
             // Log the exception details
             System.err.println("Error registering user: " + e.getMessage());
@@ -62,7 +63,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
         }
     }
-    
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable UUID id) {
@@ -94,6 +94,18 @@ public class UserController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
         userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/suspend")
+    public ResponseEntity<Void> suspendUser(@PathVariable UUID id) {
+        userService.suspendUser(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/mark-for-deletion")
+    public ResponseEntity<Void> markForDeletion(@PathVariable UUID id) {
+        userService.markForDeletion(id);
         return ResponseEntity.noContent().build();
     }
 }

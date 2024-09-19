@@ -21,7 +21,7 @@ import br.com.verbi.verbi.service.UserService;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.Optional;
 import java.security.Principal;
 
 @RestController
@@ -39,6 +39,17 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginDto loginDto) {
+        // Verifique se o usuário existe
+        Optional<User> userOptional = userService.findUserByEmail(loginDto.getEmail());
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+
+            // Se o usuário estiver suspenso, reative a conta e retorne um token
+            if (user.isSuspended()) {
+                userService.reactivateUser(user.getId()); // Reativa a conta
+            }
+        }
+
         boolean isAuthenticated = userService.authenticateUser(loginDto.getEmail(), loginDto.getPassword());
         if (isAuthenticated) {
             String token = jwtGenerator.generateToken(loginDto.getEmail());
@@ -57,7 +68,7 @@ public class AuthController {
 
             String name = oauth2User.getAttribute("name");
             String email = oauth2User.getAttribute("email");
-            String googleId = oauth2User.getAttribute("sub"); 
+            String googleId = oauth2User.getAttribute("sub");
 
             User user = userService.createUserFromOAuth2(name, email, googleId);
 

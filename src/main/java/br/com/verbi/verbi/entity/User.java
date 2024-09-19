@@ -1,6 +1,7 @@
 package br.com.verbi.verbi.entity;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -29,9 +30,18 @@ public class User {
     private String name;
     private String email;
     private String picture;
-    private String password; 
-    private String googleId; 
+    private String password;
     private String description;
+
+    @Column(nullable = false)
+    private boolean suspended = false;
+    private LocalDateTime suspensionDate;
+
+    private LocalDateTime deleteMarkedDate; // Data em que a conta foi marcada para exclusão
+    private LocalDateTime deletionDate; // Data em que a conta foi realmente excluída
+
+    private String googleId;
+    
     private String emailConfirmationToken;
     private LocalDateTime emailConfirmationExpires;
 
@@ -57,11 +67,11 @@ public class User {
         this.name = name;
     }
 
-    public String getPicure() {
+    public String getPicture() {
         return picture;
     }
 
-    public void setPicure(String picture) {
+    public void setPicture(String picture) {
         this.picture = picture;
     }
 
@@ -79,6 +89,42 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public boolean isSuspended() {
+        return suspended;
+    }
+
+    public Boolean getSuspended() {
+        return suspended;
+    }
+
+    public void setSuspended(Boolean suspended) {
+        this.suspended = suspended;
+    }
+
+    public LocalDateTime getSuspensionDate() {
+        return suspensionDate;
+    }
+
+    public void setSuspensionDate(LocalDateTime suspensionDate) {
+        this.suspensionDate = suspensionDate;
+    }
+
+    public LocalDateTime getDeleteMarkedDate() {
+        return deleteMarkedDate;
+    }
+
+    public void setDeleteMarkedDate(LocalDateTime deleteMarkedDate) {
+        this.deleteMarkedDate = deleteMarkedDate;
+    }
+
+    public LocalDateTime getDeletionDate() {
+        return deletionDate;
+    }
+
+    public void setDeletionDate(LocalDateTime deletionDate) {
+        this.deletionDate = deletionDate;
     }
 
     public String getGoogleId() {
