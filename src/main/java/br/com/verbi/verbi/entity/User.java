@@ -40,6 +40,9 @@ public class User {
     private LocalDateTime deleteMarkedDate; // Data em que a conta foi marcada para exclusão
     private LocalDateTime deletionDate; // Data em que a conta foi realmente excluída
 
+    private String resetPasswordToken;
+    private LocalDateTime resetPasswordExpires;
+
     private String googleId;
     
     private String emailConfirmationToken;
@@ -125,6 +128,23 @@ public class User {
 
     public void setDeletionDate(LocalDateTime deletionDate) {
         this.deletionDate = deletionDate;
+        
+    }
+
+    public String getResetPasswordToken() {
+        return resetPasswordToken;
+    }
+    
+    public void setResetPasswordToken(String resetPasswordToken) {
+        this.resetPasswordToken = resetPasswordToken;
+    }
+    
+    public LocalDateTime getResetPasswordExpires() {
+        return resetPasswordExpires;
+    }
+    
+    public void setResetPasswordExpires(LocalDateTime resetPasswordExpires) {
+        this.resetPasswordExpires = resetPasswordExpires;
     }
 
     public String getGoogleId() {

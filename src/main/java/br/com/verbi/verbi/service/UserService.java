@@ -12,6 +12,8 @@ import br.com.verbi.verbi.dto.UserDto;
 import br.com.verbi.verbi.entity.User;
 import br.com.verbi.verbi.exception.AccessDeniedException;
 import br.com.verbi.verbi.exception.EmailAlreadyExistsException;
+import br.com.verbi.verbi.exception.TokenExpiredException;
+import br.com.verbi.verbi.exception.TokenInvalidException;
 import br.com.verbi.verbi.exception.UserNotFoundException;
 import br.com.verbi.verbi.repository.UserRepository;
 
@@ -30,7 +32,8 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    private static final int GRACE_PERIOD_DAYS = 30;
+    @Autowired
+    private EmailService emailService;
 
     public User registerUser(String name, String email, String password) {
         Optional<User> existingUser = userRepository.findByEmail(email);
@@ -94,6 +97,47 @@ public class UserService {
 
     public List<User> findUserByName(String name) {
         return userRepository.findByNameContaining(name);
+    }
+
+    public void updatePassword(UUID userId, String oldPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Incorrect current password");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    public void requestPasswordReset(String email) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            String resetToken = UUID.randomUUID().toString();
+            user.setResetPasswordToken(resetToken);
+            user.setResetPasswordExpires(LocalDateTime.now().plusHours(1)); // Token válido por 1 hora
+            userRepository.save(user);
+
+            // Cria o link para o reset de senha
+            String resetLink = "http://localhost:3333/reset-password?token=" + resetToken;
+            emailService.sendResetPasswordEmail(user, resetLink); // Chama a função para enviar o e-mail
+        }
+    }
+
+    public void resetPassword(String token, String newPassword) {
+        User user = userRepository.findByResetPasswordToken(token)
+                .orElseThrow(() -> new TokenInvalidException("Invalid or expired password reset token."));
+
+        if (user.getResetPasswordExpires().isBefore(LocalDateTime.now())) {
+            throw new TokenExpiredException("Password reset token has expired.");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setResetPasswordToken(null); // Limpa o token após o uso
+        user.setResetPasswordExpires(null); // Limpa a data de expiração
+        userRepository.save(user);
     }
 
     public User updateUser(UUID id, UserDto userDto) {

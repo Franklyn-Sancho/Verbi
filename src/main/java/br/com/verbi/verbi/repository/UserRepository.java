@@ -21,4 +21,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
    List<User> findByNameContaining(String name);
 
    List<User> findByDeleteMarkedDateBeforeAndDeletionDateIsNull(LocalDateTime cutoffDate);
+
+   Optional<User> findByResetPasswordToken(String resetPasswordToken);
 }

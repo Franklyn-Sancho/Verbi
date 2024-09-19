@@ -3,7 +3,6 @@ package br.com.verbi.verbi.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -89,6 +88,26 @@ public class UserController {
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @PostMapping("/password/request-reset")
+    public ResponseEntity<String> requestPasswordReset(@RequestBody String email) {
+        userService.requestPasswordReset(email);
+        return ResponseEntity.ok("Password reset email sent.");
+    }
+
+    @PostMapping("/password/reset")
+    public ResponseEntity<String> resetPassword(@RequestParam String token, @RequestBody String newPassword) {
+        userService.resetPassword(token, newPassword);
+        return ResponseEntity.ok("Password has been reset successfully.");
+    }
+
+    @PutMapping("/password/update")
+    public ResponseEntity<String> updatePassword(@RequestParam UUID userId,
+                                                 @RequestParam String oldPassword,
+                                                 @RequestBody String newPassword) {
+        userService.updatePassword(userId, oldPassword, newPassword);
+        return ResponseEntity.ok("Password updated successfully.");
     }
 
     @DeleteMapping("/{id}")
