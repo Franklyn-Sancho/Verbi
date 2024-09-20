@@ -33,7 +33,7 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private EmailService emailService;
+    private AuthService authService;
 
     public User registerUser(String name, String email, String password) {
         Optional<User> existingUser = userRepository.findByEmail(email);
@@ -87,8 +87,8 @@ public class UserService {
         return false;
     }
 
-    public Optional<User> findUserById(UUID id) {
-        return userRepository.findById(id);
+    public Optional<User> findUserById(UUID userId) {
+        return userRepository.findById(userId);
     }
 
     public Optional<User> findUserByEmail(String email) {
@@ -101,16 +101,10 @@ public class UserService {
 
     public void updatePassword(UUID userId, String oldPassword, String newPassword) {
 
-        // Obtém o usuário autenticado
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String authenticatedEmail = authentication.getName(); // Pega o email do usuário autenticado
+        authService.verifyUserAuthorization(userId, userRepository);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-        if (!user.getEmail().equals(authenticatedEmail)) {
-            throw new AccessDeniedException("You are not allowed to suspend this account");
-        }
 
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             throw new IllegalArgumentException("Incorrect current password");
@@ -161,17 +155,10 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public User updateUser(UUID id, UserDto userDto) {
-        // Obtém o usuário autenticado
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String authenticatedEmail = authentication.getName(); // Pega o email do usuário autenticado
+    public User updateUser(UUID userId, UserDto userDto) {
+        authService.verifyUserAuthorization(userId, userRepository); // Verifica se o usuário tem permissão
 
-        return userRepository.findById(id).map(user -> {
-            // Verifica se o usuário autenticado é o dono da conta que está sendo atualizada
-            if (!user.getEmail().equals(authenticatedEmail)) {
-                throw new AccessDeniedException("You are not allowed to update this account");
-            }
-
+        return userRepository.findById(userId).map(user -> {
             // Atualiza os dados do usuário
             user.setName(userDto.getName());
             user.setEmail(userDto.getEmail());
@@ -183,22 +170,14 @@ public class UserService {
             }
 
             return userRepository.save(user);
-        }).orElseThrow(() -> new RuntimeException("User not found with id " + id));
+        }).orElseThrow(() -> new RuntimeException("User not found with id " + userId));
     }
 
     public void suspendUser(UUID userId) {
-        // Obtém o usuário autenticado
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String authenticatedEmail = authentication.getName(); // Pega o email do usuário autenticado
+        authService.verifyUserAuthorization(userId, userRepository); // Verifica se o usuário tem permissão
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new UsernameNotFoundException("User not Found"));
-
-        // Verifica se o email do usuário autenticado é o mesmo do usuário que está
-        // sendo suspenso
-        if (!user.getEmail().equals(authenticatedEmail)) {
-            throw new AccessDeniedException("You are not allowed to suspend this account");
-        }
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         user.setSuspended(true);
         user.setSuspensionDate(LocalDateTime.now());
@@ -223,15 +202,10 @@ public class UserService {
 
     public void markForDeletion(UUID userId) {
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String authenticatedEmail = authentication.getName(); // Pega o email do usuário autenticado
+        authService.verifyUserAuthorization(userId, userRepository); // Verifica se o usuário tem permissão
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not Found"));
-
-        if (!user.getEmail().equals(authenticatedEmail)) {
-            throw new AccessDeniedException("You are not allowed to delete this account");
-        }
 
         user.setDeleteMarkedDate(LocalDateTime.now());
         userRepository.save(user);
@@ -250,6 +224,8 @@ public class UserService {
     }
 
     public void deleteUser(UUID userId) {
+        authService.verifyUserAuthorization(userId, userRepository); // Verifica se o usuário tem permissão
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not Found"));
 
