@@ -100,8 +100,17 @@ public class UserService {
     }
 
     public void updatePassword(UUID userId, String oldPassword, String newPassword) {
+
+        // Obtém o usuário autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String authenticatedEmail = authentication.getName(); // Pega o email do usuário autenticado
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        if (!user.getEmail().equals(authenticatedEmail)) {
+            throw new AccessDeniedException("You are not allowed to suspend this account");
+        }
 
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             throw new IllegalArgumentException("Incorrect current password");
@@ -111,41 +120,64 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public void requestPasswordReset(String email) {
+    public User requestPasswordReset(String email) {
         Optional<User> optionalUser = userRepository.findByEmail(email);
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            String resetToken = UUID.randomUUID().toString();
-            user.setResetPasswordToken(resetToken);
-            user.setResetPasswordExpires(LocalDateTime.now().plusHours(1)); // Token válido por 1 hora
-            userRepository.save(user);
-
-            // Cria o link para o reset de senha
-            String resetLink = "http://localhost:3333/reset-password?token=" + resetToken;
-            emailService.sendResetPasswordEmail(user, resetLink); // Chama a função para enviar o e-mail
+        if (!optionalUser.isPresent()) {
+            throw new UserNotFoundException("No user found with this email.");
         }
+
+        User user = optionalUser.get();
+        String resetToken = UUID.randomUUID().toString();
+        user.setResetPasswordToken(resetToken);
+        user.setResetPasswordExpires(LocalDateTime.now().plusHours(1)); // Token válido por 1 hora
+
+        userRepository.save(user);
+
+        return user;
     }
 
     public void resetPassword(String token, String newPassword) {
-        User user = userRepository.findByResetPasswordToken(token)
-                .orElseThrow(() -> new TokenInvalidException("Invalid or expired password reset token."));
 
-        if (user.getResetPasswordExpires().isBefore(LocalDateTime.now())) {
-            throw new TokenExpiredException("Password reset token has expired.");
+        Optional<User> optionalUser = userRepository.findByResetPasswordToken(token);
+
+        if (!optionalUser.isPresent()) {
+            throw new TokenInvalidException("Invalid reset password token.");
         }
 
+        User user = optionalUser.get();
+
+        // Verificar se o token ainda é válido
+        if (user.getResetPasswordExpires().isBefore(LocalDateTime.now())) {
+            throw new TokenExpiredException("The reset password token has expired.");
+        }
+
+        System.out.println("Nova senha recebida antes do hash: " + newPassword);
+
+        // Atualizar a senha e remover o token de redefinição
         user.setPassword(passwordEncoder.encode(newPassword));
-        user.setResetPasswordToken(null); // Limpa o token após o uso
-        user.setResetPasswordExpires(null); // Limpa a data de expiração
+        user.setResetPasswordToken(null); // Remover o token após o uso
+        user.setResetPasswordExpires(null); // Remover a validade do token
+
         userRepository.save(user);
     }
 
     public User updateUser(UUID id, UserDto userDto) {
+        // Obtém o usuário autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String authenticatedEmail = authentication.getName(); // Pega o email do usuário autenticado
+
         return userRepository.findById(id).map(user -> {
+            // Verifica se o usuário autenticado é o dono da conta que está sendo atualizada
+            if (!user.getEmail().equals(authenticatedEmail)) {
+                throw new AccessDeniedException("You are not allowed to update this account");
+            }
+
+            // Atualiza os dados do usuário
             user.setName(userDto.getName());
             user.setEmail(userDto.getEmail());
             user.setDescription(userDto.getDescription());
 
+            // Se uma nova senha for fornecida, atualiza a senha
             if (userDto.getPassword() != null && !userDto.getPassword().isEmpty()) {
                 user.setPassword(passwordEncoder.encode(userDto.getPassword())); // Atualiza a senha se fornecida
             }

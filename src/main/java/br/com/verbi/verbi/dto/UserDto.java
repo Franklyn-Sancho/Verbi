@@ -7,6 +7,7 @@ public class UserDto {
     private String password; 
     private String emailConfirmationToken;
     private String emailConfirmationExpires;
+    private String newPassword;
 
     // Getters e Setters
     public String getName() {
@@ -55,6 +56,15 @@ public class UserDto {
 
     public void setEmailConfirmationExpires(String emailConfirmationExpires) {
         this.emailConfirmationExpires = emailConfirmationExpires;
+    }
+
+    // Getters e Setters
+    public String getNewPassword() {
+        return newPassword;
+    }
+
+    public void setNewPassword(String newPassword) {
+        this.newPassword = newPassword;
     }
 }
 

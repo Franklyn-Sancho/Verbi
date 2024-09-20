@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 import br.com.verbi.verbi.dto.UserDto;
 import br.com.verbi.verbi.entity.User;
 import br.com.verbi.verbi.exception.EmailAlreadyExistsException;
+import br.com.verbi.verbi.exception.TokenExpiredException;
+import br.com.verbi.verbi.exception.TokenInvalidException;
+import br.com.verbi.verbi.exception.UserNotFoundException;
 import br.com.verbi.verbi.service.EmailQueueService;
 import br.com.verbi.verbi.service.EmailService;
 import br.com.verbi.verbi.service.UserService;
@@ -45,7 +48,7 @@ public class UserController {
                     userDto.getEmail(),
                     userDto.getPassword());
 
-            String confirmationLink = "http://localhost:3333/confirm-email/" + newUser.getEmailConfirmationToken();
+            String confirmationLink = "http://localhost:8080/confirm-email/" + newUser.getEmailConfirmationToken();
 
             emailService.sendConfirmationEmail(newUser, confirmationLink);
 
@@ -91,21 +94,46 @@ public class UserController {
     }
 
     @PostMapping("/password/request-reset")
-    public ResponseEntity<String> requestPasswordReset(@RequestBody String email) {
-        userService.requestPasswordReset(email);
-        return ResponseEntity.ok("Password reset email sent.");
+    public ResponseEntity<String> requestPasswordReset(@RequestBody UserDto userDto) {
+        try {
+            User newUser = userService.requestPasswordReset(userDto.getEmail());
+
+            String resetLink = "http://localhost:8080/reset-password?token=" + newUser.getResetPasswordToken();
+
+            emailService.sendResetPasswordEmail(newUser, resetLink);
+            return ResponseEntity.ok("Password reset email sent.");
+        } catch (UserNotFoundException e) {
+            System.err.println("Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
+        }
     }
 
     @PostMapping("/password/reset")
-    public ResponseEntity<String> resetPassword(@RequestParam String token, @RequestBody String newPassword) {
-        userService.resetPassword(token, newPassword);
-        return ResponseEntity.ok("Password has been reset successfully.");
+    public ResponseEntity<String> resetPassword(@RequestParam String token, @RequestBody UserDto userDto) {
+        try {
+            userService.resetPassword(token, userDto.getNewPassword());
+            return ResponseEntity.ok("Password has been reset successfully.");
+        } catch (TokenExpiredException e) {
+            System.err.println("Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (TokenInvalidException e) {
+            System.err.println("Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
+        }
     }
 
     @PutMapping("/password/update")
     public ResponseEntity<String> updatePassword(@RequestParam UUID userId,
-                                                 @RequestParam String oldPassword,
-                                                 @RequestBody String newPassword) {
+            @RequestParam String oldPassword,
+            @RequestBody String newPassword) {
         userService.updatePassword(userId, oldPassword, newPassword);
         return ResponseEntity.ok("Password updated successfully.");
     }
