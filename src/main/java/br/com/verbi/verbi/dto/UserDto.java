@@ -1,5 +1,7 @@
 package br.com.verbi.verbi.dto;
 
+import org.springframework.web.multipart.MultipartFile;
+
 public class UserDto {
     private String name;
     private String email;
@@ -8,6 +10,7 @@ public class UserDto {
     private String emailConfirmationToken;
     private String emailConfirmationExpires;
     private String newPassword;
+    private MultipartFile picture;
 
     // Getters e Setters
     public String getName() {
@@ -65,6 +68,14 @@ public class UserDto {
 
     public void setNewPassword(String newPassword) {
         this.newPassword = newPassword;
+    }
+
+    public MultipartFile getPicture() {
+        return picture;
+    }
+
+    public void setPicture(MultipartFile picture) {
+        this.picture = picture;
     }
 }
 

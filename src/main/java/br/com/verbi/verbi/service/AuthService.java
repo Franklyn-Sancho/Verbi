@@ -4,12 +4,14 @@ import java.util.UUID;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
 import org.springframework.security.core.Authentication;
 
 import br.com.verbi.verbi.entity.User;
 import br.com.verbi.verbi.exception.AccessDeniedException;
 import br.com.verbi.verbi.repository.UserRepository;
 
+@Service
 public class AuthService {
 
     public void verifyUserAuthorization(UUID userId, UserRepository userRepository) {

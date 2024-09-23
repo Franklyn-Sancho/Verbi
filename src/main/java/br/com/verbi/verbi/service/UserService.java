@@ -7,6 +7,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import br.com.verbi.verbi.dto.UserDto;
 import br.com.verbi.verbi.entity.User;
@@ -18,6 +19,8 @@ import br.com.verbi.verbi.exception.UserNotFoundException;
 import br.com.verbi.verbi.repository.UserRepository;
 
 import java.time.LocalDateTime;
+
+import java.io.IOException;
 
 import java.util.Optional;
 import java.util.List;
@@ -35,31 +38,36 @@ public class UserService {
     @Autowired
     private AuthService authService;
 
-    public User registerUser(String name, String email, String password) {
-        Optional<User> existingUser = userRepository.findByEmail(email);
+    @Autowired
+    private FileService fileService;
 
+    public User registerUser(String name, String email, String password, MultipartFile picture) {
+        Optional<User> existingUser = userRepository.findByEmail(email);
+    
         if (existingUser.isPresent()) {
             System.out.println("Email already exists: " + email);
             throw new EmailAlreadyExistsException("An error occurred, please check your data.");
         }
-
+    
         User newUser = new User();
         newUser.setId(UUID.randomUUID());
         newUser.setName(name);
         newUser.setEmail(email);
         newUser.setPassword(passwordEncoder.encode(password));
-
-        String emailConfirmationToken = UUID.randomUUID().toString();
-        newUser.setEmailConfirmationToken(emailConfirmationToken);
-
-        LocalDateTime tokenExpiryDate = LocalDateTime.now().plusHours(1);
-        newUser.setEmailConfirmationExpires(tokenExpiryDate);
-
-        userRepository.save(newUser);
-
-        System.out.println("User saved successfully: " + newUser.getEmail());
+    
+        // Lógica para salvar a imagem de perfil
+        if (picture != null && !picture.isEmpty()) {
+            try {
+                String pictureUrl = fileService.saveFile(picture, "imageProfile"); // Diretório para fotos de perfil
+                newUser.setPicture(pictureUrl);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to save picture: " + e.getMessage());
+            }
+        }
+    
         return newUser;
     }
+    
 
     public User createUserFromOAuth2(String name, String email, String googleId) {
         User user = userRepository.findByEmail(email).orElseGet(() -> {
@@ -114,6 +122,14 @@ public class UserService {
         userRepository.save(user);
     }
 
+    public void updateUserPicure(UUID userId, String fileName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not Found"));
+
+        user.setPicture(fileName);
+        userRepository.save(user);
+    }
+
     public User requestPasswordReset(String email) {
         Optional<User> optionalUser = userRepository.findByEmail(email);
         if (!optionalUser.isPresent()) {
@@ -144,8 +160,6 @@ public class UserService {
         if (user.getResetPasswordExpires().isBefore(LocalDateTime.now())) {
             throw new TokenExpiredException("The reset password token has expired.");
         }
-
-        System.out.println("Nova senha recebida antes do hash: " + newPassword);
 
         // Atualizar a senha e remover o token de redefinição
         user.setPassword(passwordEncoder.encode(newPassword));
@@ -224,7 +238,6 @@ public class UserService {
     }
 
     public void deleteUser(UUID userId) {
-        authService.verifyUserAuthorization(userId, userRepository); // Verifica se o usuário tem permissão
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not Found"));

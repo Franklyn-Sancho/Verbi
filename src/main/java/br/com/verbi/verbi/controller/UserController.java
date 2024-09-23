@@ -5,13 +5,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.MediaType;
 
 import br.com.verbi.verbi.dto.UserDto;
 import br.com.verbi.verbi.entity.User;
@@ -19,9 +25,11 @@ import br.com.verbi.verbi.exception.EmailAlreadyExistsException;
 import br.com.verbi.verbi.exception.TokenExpiredException;
 import br.com.verbi.verbi.exception.TokenInvalidException;
 import br.com.verbi.verbi.exception.UserNotFoundException;
-import br.com.verbi.verbi.service.EmailQueueService;
+import br.com.verbi.verbi.repository.UserRepository;
 import br.com.verbi.verbi.service.EmailService;
+import br.com.verbi.verbi.service.FileService;
 import br.com.verbi.verbi.service.UserService;
+import jakarta.validation.Valid;
 
 import java.util.Optional;
 import java.util.List;
@@ -35,33 +43,44 @@ public class UserController {
     private UserService userService;
 
     @Autowired
-    private EmailQueueService emailQueueService;
+    private UserRepository userRepository;
 
     @Autowired
     private EmailService emailService;
 
-    @PostMapping("/register")
-    public ResponseEntity<?> createUser(@RequestBody UserDto userDto) {
+
+    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> createUser(
+        @RequestPart("userDto") @Valid @ModelAttribute UserDto userDto,
+        @RequestPart(value = "picture", required = false) MultipartFile picture) {
         try {
+            // Lógica para registro de usuário com a imagem
             User newUser = userService.registerUser(
                     userDto.getName(),
                     userDto.getEmail(),
-                    userDto.getPassword());
-
-            String confirmationLink = "http://localhost:8080/confirm-email/" + newUser.getEmailConfirmationToken();
-
-            emailService.sendConfirmationEmail(newUser, confirmationLink);
-
+                    userDto.getPassword(),
+                    picture);
+    
+            // Salva o usuário no banco de dados
+            userRepository.save(newUser);
+    
+            // Tenta enviar o e-mail de confirmação
+            try {
+                String confirmationLink = "http://localhost:8080/confirm-email/" + newUser.getEmailConfirmationToken();
+                emailService.sendConfirmationEmail(newUser, confirmationLink);
+            } catch (Exception e) {
+                System.err.println("Failed to send confirmation email: " + e.getMessage());
+                // Log do erro, mas não interrompe o fluxo
+            }
+    
             return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
-
+    
         } catch (EmailAlreadyExistsException e) {
-            // Log the exception details
             System.err.println("Error registering user: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
-            // Log the exception details
             System.err.println("Unexpected error: " + e.getMessage());
-            e.printStackTrace(); // Adicione esta linha para imprimir o stack trace completo
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
         }
     }
