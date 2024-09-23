@@ -1,19 +1,20 @@
 package br.com.verbi.verbi.service;
 
-import java.util.UUID;
-
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.security.core.Authentication;
 
 import br.com.verbi.verbi.entity.User;
 import br.com.verbi.verbi.exception.AccessDeniedException;
 import br.com.verbi.verbi.repository.UserRepository;
 
-@Service
-public class AuthService {
+import java.util.UUID;
 
+@Service
+public class AuthorizationService {
+    
     public void verifyUserAuthorization(UUID userId, UserRepository userRepository) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String authenticatedEmail = authentication.getName(); // Pega o email do usuário autenticado

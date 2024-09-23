@@ -2,8 +2,6 @@ package br.com.verbi.verbi.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -11,8 +9,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import br.com.verbi.verbi.dto.UserDto;
 import br.com.verbi.verbi.entity.User;
-import br.com.verbi.verbi.exception.AccessDeniedException;
 import br.com.verbi.verbi.exception.EmailAlreadyExistsException;
+import br.com.verbi.verbi.exception.EmailServiceUnavailableException;
 import br.com.verbi.verbi.exception.TokenExpiredException;
 import br.com.verbi.verbi.exception.TokenInvalidException;
 import br.com.verbi.verbi.exception.UserNotFoundException;
@@ -36,38 +34,68 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private AuthService authService;
+    private AuthorizationService authorizationService;
 
     @Autowired
     private FileService fileService;
 
-    public User registerUser(String name, String email, String password, MultipartFile picture) {
-        Optional<User> existingUser = userRepository.findByEmail(email);
-    
-        if (existingUser.isPresent()) {
-            System.out.println("Email already exists: " + email);
-            throw new EmailAlreadyExistsException("An error occurred, please check your data.");
+    @Autowired
+    private EmailService emailService;
+
+    public String registerUserWithEmail(UserDto userDto, MultipartFile picture) {
+        validateEmailUniqueness(userDto.getEmail());
+
+        User newUser = createUser(userDto);
+        handleProfilePicture(picture, newUser);
+
+        userRepository.save(newUser);
+        return sendConfirmationEmail(newUser);
+    }
+
+    public void validateEmailUniqueness(String email) {
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new EmailAlreadyExistsException("Email already exists.");
         }
-    
-        User newUser = new User();
-        newUser.setId(UUID.randomUUID());
-        newUser.setName(name);
-        newUser.setEmail(email);
-        newUser.setPassword(passwordEncoder.encode(password));
-    
-        // Lógica para salvar a imagem de perfil
+    }
+
+    private void handleProfilePicture(MultipartFile picture, User user) {
         if (picture != null && !picture.isEmpty()) {
             try {
-                String pictureUrl = fileService.saveFile(picture, "imageProfile"); // Diretório para fotos de perfil
-                newUser.setPicture(pictureUrl);
+                String pictureUrl = fileService.saveFile(picture, "imageProfile");
+                user.setPicture(pictureUrl);
             } catch (IOException e) {
-                throw new RuntimeException("Failed to save picture: " + e.getMessage());
+                throw new RuntimeException("Failed to save picture: " + e.getMessage(), e);
             }
         }
-    
-        return newUser;
     }
-    
+
+    private String sendConfirmationEmail(User user) {
+        try {
+            emailService.sendConfirmationEmail(user);
+            return "User registered successfully and confirmation email sent.";
+        } catch (EmailServiceUnavailableException e) {
+            return "User registered successfully, but the email service is down. The confirmation email will be sent as soon as possible.";
+        } catch (Exception e) {
+            return "User registered successfully, but an error occurred while sending the confirmation email.";
+        }
+    }
+
+    public boolean authenticateUser(String email, String password) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user != null) {
+            return passwordEncoder.matches(password, user.getPassword());
+        }
+        return false;
+    }
+
+    public User createUser(UserDto userDto) {
+        User user = new User();
+        user.setId(UUID.randomUUID());
+        user.setName(userDto.getName());
+        user.setEmail(userDto.getEmail());
+        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
+        return user;
+    }
 
     public User createUserFromOAuth2(String name, String email, String googleId) {
         User user = userRepository.findByEmail(email).orElseGet(() -> {
@@ -87,14 +115,6 @@ public class UserService {
         return user;
     }
 
-    public boolean authenticateUser(String email, String password) {
-        User user = userRepository.findByEmail(email).orElse(null);
-        if (user != null) {
-            return passwordEncoder.matches(password, user.getPassword());
-        }
-        return false;
-    }
-
     public Optional<User> findUserById(UUID userId) {
         return userRepository.findById(userId);
     }
@@ -109,7 +129,7 @@ public class UserService {
 
     public void updatePassword(UUID userId, String oldPassword, String newPassword) {
 
-        authService.verifyUserAuthorization(userId, userRepository);
+        authorizationService.verifyUserAuthorization(userId, userRepository);
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
@@ -170,7 +190,7 @@ public class UserService {
     }
 
     public User updateUser(UUID userId, UserDto userDto) {
-        authService.verifyUserAuthorization(userId, userRepository); // Verifica se o usuário tem permissão
+        authorizationService.verifyUserAuthorization(userId, userRepository); // Verifica se o usuário tem permissão
 
         return userRepository.findById(userId).map(user -> {
             // Atualiza os dados do usuário
@@ -188,7 +208,7 @@ public class UserService {
     }
 
     public void suspendUser(UUID userId) {
-        authService.verifyUserAuthorization(userId, userRepository); // Verifica se o usuário tem permissão
+        authorizationService.verifyUserAuthorization(userId, userRepository); // Verifica se o usuário tem permissão
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
@@ -216,7 +236,7 @@ public class UserService {
 
     public void markForDeletion(UUID userId) {
 
-        authService.verifyUserAuthorization(userId, userRepository); // Verifica se o usuário tem permissão
+        authorizationService.verifyUserAuthorization(userId, userRepository); // Verifica se o usuário tem permissão
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not Found"));
@@ -242,7 +262,6 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not Found"));
 
-        // Excluir usuário e todos os seus dados relacionados
         userRepository.delete(user);
     }
 }

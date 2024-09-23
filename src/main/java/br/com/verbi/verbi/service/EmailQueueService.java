@@ -10,29 +10,24 @@ import br.com.verbi.verbi.entity.EmailMessage;
 
 @Service
 public class EmailQueueService {
-    
+
     @Autowired
     private RabbitTemplate rabbitTemplate;
-    
-    @Autowired
-    private EmailService emailService;
 
     public void sendEmailToQueue(String to, String subject, String body) {
-        
         EmailMessage emailMessage = new EmailMessage(to, subject, body);
-
         rabbitTemplate.convertAndSend(RabbitMQConfig.EMAIL_QUEUE, emailMessage);
     }
 
     @RabbitListener(queues = RabbitMQConfig.EMAIL_QUEUE)
     public void processEmailQueue(EmailMessage emailMessage) {
-
+        // Cria uma instância do EmailService dentro do método
+        EmailService emailService = new EmailService();
         try {
             emailService.sendEmail(emailMessage.getTo(), emailMessage.getSubject(), emailMessage.getBody());
             System.out.println("Email enviado com sucesso");
         } catch (Exception e) {
-            System.out.println("Falha ao enviar e-mail" + e.getMessage());
+            System.out.println("Falha ao enviar e-mail: " + e.getMessage());
         }
     }
-
 }

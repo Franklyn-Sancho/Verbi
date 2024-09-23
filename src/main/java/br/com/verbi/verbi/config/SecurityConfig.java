@@ -27,33 +27,31 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                .requestMatchers("/api/users/register").permitAll()
-                .requestMatchers("/api/auth/login").permitAll()
-                .requestMatchers("/api/auth/logout").authenticated()
-                .requestMatchers("/api/mural/write").authenticated()
-                .requestMatchers("/api/mural/update/**").authenticated()
-                .requestMatchers("/api/mural/delete/**").authenticated()
-                .requestMatchers("/api/mural/user/**").permitAll()
-                .requestMatchers("/oauth2/**").permitAll()
-                .anyRequest().authenticated())
-            .oauth2Login(oauth2Login -> oauth2Login
-                .defaultSuccessUrl("/api/auth/success", true)
-                .failureUrl("/login?error=true")
-                .permitAll())
-            .formLogin(formLogin -> formLogin
-                .loginPage("/login")
-                .permitAll())
-            .addFilterBefore(tokenBlacklistFilter, UsernamePasswordAuthenticationFilter.class)
-            .logout(logout -> logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/login?logout=true")
-                .permitAll())
-            .addFilterBefore(new JwtFilter(jwtGenerator, userService), 
-                UsernamePasswordAuthenticationFilter.class); // Registra o filtro JWT
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+                        // Rotas sem autenticação
+                        .requestMatchers("/api/user/register", "/api/user/login", "/oauth/**").permitAll()
+                        // Rotas protegidas
+                        .requestMatchers("/api/user/logout", "/api/mural/**").authenticated()
+                        .anyRequest().authenticated())
+                // Configura login com OAuth2
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/oauth/login/success")
+                        .failureUrl("/oauth/login/failure")
+                        .permitAll())
+                // Configura login JWT
+                .formLogin(formLogin -> formLogin
+                        .loginPage("/login")
+                        .permitAll())
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout=true")
+                        .permitAll())
+                // Filtro para validação de tokens JWT
+                .addFilterBefore(new JwtFilter(jwtGenerator, userService), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(tokenBlacklistFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 }
-

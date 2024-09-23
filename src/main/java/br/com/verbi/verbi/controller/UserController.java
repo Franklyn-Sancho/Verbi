@@ -3,6 +3,8 @@ package br.com.verbi.verbi.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -10,79 +12,86 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.MediaType;
 
+import br.com.verbi.verbi.dto.LoginDto;
 import br.com.verbi.verbi.dto.UserDto;
 import br.com.verbi.verbi.entity.User;
-import br.com.verbi.verbi.exception.EmailAlreadyExistsException;
 import br.com.verbi.verbi.exception.TokenExpiredException;
 import br.com.verbi.verbi.exception.TokenInvalidException;
 import br.com.verbi.verbi.exception.UserNotFoundException;
-import br.com.verbi.verbi.repository.UserRepository;
+import br.com.verbi.verbi.security.JWTGenerator;
 import br.com.verbi.verbi.service.EmailService;
-import br.com.verbi.verbi.service.FileService;
+import br.com.verbi.verbi.service.TokenBlacklistService;
 import br.com.verbi.verbi.service.UserService;
 import jakarta.validation.Valid;
 
 import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
+import java.util.HashMap;
+import java.util.Map;
+
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/user")
 public class UserController {
 
     @Autowired
     private UserService userService;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private JWTGenerator jwtGenerator;
 
-    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> createUser(
-        @RequestPart("userDto") @Valid @ModelAttribute UserDto userDto,
-        @RequestPart(value = "picture", required = false) MultipartFile picture) {
-        try {
-            // Lógica para registro de usuário com a imagem
-            User newUser = userService.registerUser(
-                    userDto.getName(),
-                    userDto.getEmail(),
-                    userDto.getPassword(),
-                    picture);
-    
-            // Salva o usuário no banco de dados
-            userRepository.save(newUser);
-    
-            // Tenta enviar o e-mail de confirmação
-            try {
-                String confirmationLink = "http://localhost:8080/confirm-email/" + newUser.getEmailConfirmationToken();
-                emailService.sendConfirmationEmail(newUser, confirmationLink);
-            } catch (Exception e) {
-                System.err.println("Failed to send confirmation email: " + e.getMessage());
-                // Log do erro, mas não interrompe o fluxo
+    @Autowired
+    private TokenBlacklistService tokenBlacklistService;
+
+    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> registerUser(
+            @RequestPart("userDto") @Valid @ModelAttribute UserDto userDto,
+            @RequestPart(value = "picture", required = false) MultipartFile picture) {
+        String message = userService.registerUserWithEmail(userDto, picture);
+        return ResponseEntity.status(HttpStatus.CREATED).body(message);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginDto loginDto) {
+        // Verifique se o usuário existe
+        Optional<User> userOptional = userService.findUserByEmail(loginDto.getEmail());
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+
+            // Se o usuário estiver suspenso, reative a conta e retorne um token
+            if (user.isSuspended()) {
+                userService.reactivateUser(user.getId()); // Reativa a conta
             }
-    
-            return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
-    
-        } catch (EmailAlreadyExistsException e) {
-            System.err.println("Error registering user: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            System.err.println("Unexpected error: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
         }
+
+        boolean isAuthenticated = userService.authenticateUser(loginDto.getEmail(), loginDto.getPassword());
+        if (isAuthenticated) {
+            String token = jwtGenerator.generateToken(loginDto.getEmail());
+            Map<String, String> response = new HashMap<>();
+            response.put("token", "Bearer " + token);
+            return ResponseEntity.ok(response);
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestHeader("Authorization") String token) {
+        String actualToken = token.substring(7);
+        tokenBlacklistService.blacklistToken(actualToken);
+        return ResponseEntity.ok("Logout Successfully");
     }
 
     @GetMapping("/{id}")
@@ -122,7 +131,6 @@ public class UserController {
             emailService.sendResetPasswordEmail(newUser, resetLink);
             return ResponseEntity.ok("Password reset email sent.");
         } catch (UserNotFoundException e) {
-            System.err.println("Error: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
             System.err.println("Unexpected error: " + e.getMessage());
