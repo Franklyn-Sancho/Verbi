@@ -52,6 +52,10 @@ public class UserService {
         return sendConfirmationEmail(newUser);
     }
 
+    public User save(User user) {
+        return userRepository.save(user);
+    }
+
     public void validateEmailUniqueness(String email) {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new EmailAlreadyExistsException("Email already exists.");
