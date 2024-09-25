@@ -23,4 +23,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
    List<User> findByDeleteMarkedDateBeforeAndDeletionDateIsNull(LocalDateTime cutoffDate);
 
    Optional<User> findByResetPasswordToken(String resetPasswordToken);
+
+   boolean existsByEmail(String email);
 }

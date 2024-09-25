@@ -2,6 +2,9 @@ package br.com.verbi.verbi.dto;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import lombok.Data;
+
+@Data
 public class UserDto {
     private String name;
     private String email;

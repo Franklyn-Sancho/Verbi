@@ -42,15 +42,32 @@ public class UserService {
     @Autowired
     private EmailService emailService;
 
-    public String registerUserWithEmail(UserDto userDto, MultipartFile picture) {
-        validateEmailUniqueness(userDto.getEmail());
-
-        User newUser = createUser(userDto);
-        handleProfilePicture(picture, newUser);
-
-        userRepository.save(newUser);
-        return sendConfirmationEmail(newUser);
+    public User registerUserWithEmail(UserDto userDto, MultipartFile picture) {
+        // Verifica se o e-mail já está em uso
+        if (userRepository.existsByEmail(userDto.getEmail())) {
+            throw new RuntimeException("Email already in use");
+        }
+    
+        // Cria um novo objeto User a partir do UserDto
+        User user = new User();
+        user.setEmail(userDto.getEmail());
+        user.setName(userDto.getName());
+        user.setPassword(passwordEncoder.encode(userDto.getPassword()));
+    
+        // Processa a imagem de perfil, se houver
+        if (picture != null && !picture.isEmpty()) {
+            try {
+                String pictureUrl = fileService.saveFile(picture, "imageProfile");
+                user.setPicture(pictureUrl);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to save picture: " + e.getMessage(), e);
+            }
+        }
+    
+        // Salva o usuário no repositório e retorna o objeto User
+        return userRepository.save(user);
     }
+    
 
     public User save(User user) {
         return userRepository.save(user);

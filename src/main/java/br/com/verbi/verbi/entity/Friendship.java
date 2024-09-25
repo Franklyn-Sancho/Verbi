@@ -22,15 +22,15 @@ public class Friendship {
     }
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "user1_id", nullable = false)
+    @JoinColumn(name = "sender_id", nullable = false)
     private User sender; // O usuário que envia o pedido de amizade
 
     @ManyToOne
-    @JoinColumn(name = "user2_id", nullable = false)
+    @JoinColumn(name = "receiver_id", nullable = false)
     private User receiver; // O usuário que recebe o pedido de amizade
 
     @Enumerated(EnumType.STRING)

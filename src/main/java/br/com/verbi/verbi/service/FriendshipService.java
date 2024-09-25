@@ -58,7 +58,7 @@ public class FriendshipService {
     }
 
     public List<Friendship> getFriends(User user) {
-        return friendshipRepository.findByUser1OrUser2AndStatus(user, user, FriendshipStatus.ACCEPTED);
+        return friendshipRepository.findBySenderOrReceiverAndStatus(user, user, FriendshipStatus.ACCEPTED);
     }
 
 }

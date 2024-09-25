@@ -39,7 +39,6 @@ import java.util.UUID;
 import java.util.HashMap;
 import java.util.Map;
 
-
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
@@ -57,11 +56,17 @@ public class UserController {
     private TokenBlacklistService tokenBlacklistService;
 
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> registerUser(
+    public ResponseEntity<User> registerUser(
             @RequestPart("userDto") @Valid @ModelAttribute UserDto userDto,
             @RequestPart(value = "picture", required = false) MultipartFile picture) {
-        String message = userService.registerUserWithEmail(userDto, picture);
-        return ResponseEntity.status(HttpStatus.CREATED).body(message);
+        try {
+            User user = userService.registerUserWithEmail(userDto, picture);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(user);
+        } catch (RuntimeException e) {
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        }
     }
 
     @PostMapping("/login")
