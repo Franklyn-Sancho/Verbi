@@ -214,19 +214,16 @@ public class UserControllerTest {
         user.setEmail(email);
         user.setResetPasswordToken("valid_token");
 
-        
         when(userService.requestPasswordReset(email)).thenReturn(user);
-        
+
         doNothing().when(emailService).sendResetPasswordEmail(any(User.class), any(String.class));
 
-        
         mockMvc.perform(post("/api/user/password/request-reset")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\"" + email + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Password reset email sent."));
 
-        
         verify(emailService).sendResetPasswordEmail(user, "http://localhost:8080/reset-password?token=valid_token");
     }
 
@@ -268,11 +265,9 @@ public class UserControllerTest {
         user.setResetPasswordToken(token);
         user.setResetPasswordExpires(LocalDateTime.now().minusHours(1));
 
-        
         doThrow(new TokenExpiredException("The reset password token has expired."))
                 .when(userService).resetPassword(token, newPassword);
 
-        
         mockMvc.perform(post("/api/user/password/reset")
                 .param("token", token)
                 .contentType(MediaType.APPLICATION_JSON)
