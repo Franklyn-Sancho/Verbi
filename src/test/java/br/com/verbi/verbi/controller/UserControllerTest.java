@@ -2,6 +2,7 @@ package br.com.verbi.verbi.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -12,18 +13,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+
 import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,11 +37,15 @@ import org.springframework.web.multipart.MultipartFile;
 import br.com.verbi.verbi.dto.LoginDto;
 import br.com.verbi.verbi.dto.UserDto;
 import br.com.verbi.verbi.entity.User;
+import br.com.verbi.verbi.exception.TokenExpiredException;
+import br.com.verbi.verbi.exception.UserNotFoundException;
 import br.com.verbi.verbi.repository.UserRepository;
 import br.com.verbi.verbi.security.JWTGenerator;
+import br.com.verbi.verbi.service.EmailService;
 import br.com.verbi.verbi.service.TokenBlacklistService;
 import br.com.verbi.verbi.service.UserService;
 
+@ExtendWith(MockitoExtension.class)
 public class UserControllerTest {
 
     @Autowired
@@ -55,6 +65,12 @@ public class UserControllerTest {
 
     @Mock
     private JWTGenerator jwtGenerator;
+
+    @Mock
+    private EmailService emailService;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @Mock
     private TokenBlacklistService tokenBlacklistService;
@@ -77,8 +93,6 @@ public class UserControllerTest {
         user.setName("test");
         user.setEmail("test@example.com");
         user.setPassword("encodedPassword");
-
-        when(userRepository.existsByEmail(userDto.getEmail())).thenReturn(false);
 
         when(userService.registerUserWithEmail(any(UserDto.class), any(MultipartFile.class)))
                 .thenReturn(user);
@@ -187,12 +201,84 @@ public class UserControllerTest {
         userDto.setEmail("new@example.com");
         userDto.setName("New description");
 
-        when(userService.updateUser(eq(userId), any(UserDto.class))).thenThrow(new RuntimeException("User not found"));
-
         mockMvc.perform(put("/" + userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"New Name\", \"email\":\"new@example.com\", \"description\":\"New description\"}"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void testRequestPasswordReset_UserFound() throws Exception {
+        String email = "user@example.com";
+        User user = new User();
+        user.setEmail(email);
+        user.setResetPasswordToken("valid_token");
+
+        
+        when(userService.requestPasswordReset(email)).thenReturn(user);
+        
+        doNothing().when(emailService).sendResetPasswordEmail(any(User.class), any(String.class));
+
+        
+        mockMvc.perform(post("/api/user/password/request-reset")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"" + email + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Password reset email sent."));
+
+        
+        verify(emailService).sendResetPasswordEmail(user, "http://localhost:8080/reset-password?token=valid_token");
+    }
+
+    @Test
+    public void testRequestPasswordReset_UserNotFound() throws Exception {
+        String email = "nonexistent@example.com";
+
+        when(userService.requestPasswordReset(email))
+                .thenThrow(new UserNotFoundException("No user found with this email."));
+
+        mockMvc.perform(post("/api/user/password/request-reset")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"" + email + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("No user found with this email."));
+    }
+
+    @Test
+    public void testResetPassword_ValidToken() throws Exception {
+        String token = "valid_token";
+        String newPassword = "newPassword123";
+
+        doNothing().when(userService).resetPassword(token, newPassword);
+
+        mockMvc.perform(post("/api/user/password/reset")
+                .param("token", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"newPassword\":\"" + newPassword + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Password has been reset successfully."));
+    }
+
+    @Test
+    public void testResetPassword_ExpiredToken() throws Exception {
+        String token = "expired_token";
+        String newPassword = "newPassword";
+
+        User user = new User();
+        user.setResetPasswordToken(token);
+        user.setResetPasswordExpires(LocalDateTime.now().minusHours(1));
+
+        
+        doThrow(new TokenExpiredException("The reset password token has expired."))
+                .when(userService).resetPassword(token, newPassword);
+
+        
+        mockMvc.perform(post("/api/user/password/reset")
+                .param("token", token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"newPassword\":\"" + newPassword + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("The reset password token has expired."));
     }
 
 }

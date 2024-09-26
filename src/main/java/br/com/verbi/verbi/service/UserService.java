@@ -160,27 +160,31 @@ public class UserService {
     }
 
     public void resetPassword(String token, String newPassword) {
-
         Optional<User> optionalUser = userRepository.findByResetPasswordToken(token);
-
+        
         if (!optionalUser.isPresent()) {
             throw new TokenInvalidException("Invalid reset password token.");
         }
-
+        
         User user = optionalUser.get();
-
+        
         // Verificar se o token ainda é válido
         if (user.getResetPasswordExpires().isBefore(LocalDateTime.now())) {
             throw new TokenExpiredException("The reset password token has expired.");
         }
-
+        
         // Atualizar a senha e remover o token de redefinição
         user.setPassword(passwordEncoder.encode(newPassword));
-        user.setResetPasswordToken(null); // Remover o token após o uso
-        user.setResetPasswordExpires(null); // Remover a validade do token
-
+        user.setResetPasswordToken(null);
+        user.setResetPasswordExpires(null);
+        
         userRepository.save(user);
     }
+    
+    
+    
+    
+    
 
     public User updateUser(UUID userId, UserDto userDto) {
         authorizationService.verifyUserAuthorization(userId, userRepository); // Verifica se o usuário tem permissão
@@ -251,10 +255,10 @@ public class UserService {
     }
 
     public void deleteUser(UUID userId) {
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not Found"));
-
+        
         userRepository.delete(user);
     }
+    
 }

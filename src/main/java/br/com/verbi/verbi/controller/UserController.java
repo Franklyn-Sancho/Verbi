@@ -150,14 +150,10 @@ public class UserController {
             userService.resetPassword(token, userDto.getNewPassword());
             return ResponseEntity.ok("Password has been reset successfully.");
         } catch (TokenExpiredException e) {
-            System.err.println("Error: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (TokenInvalidException e) {
-            System.err.println("Error: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
-            System.err.println("Unexpected error: " + e.getMessage());
-            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
         }
     }
