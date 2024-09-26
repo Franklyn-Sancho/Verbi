@@ -8,6 +8,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import br.com.verbi.verbi.entity.User;
+import br.com.verbi.verbi.exception.EmailCreationException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
@@ -18,7 +19,7 @@ public class EmailService {
     private JavaMailSender mailSender;
 
     @Autowired
-    private EmailQueueService emailQueueService;  // Injeta o EmailQueueService
+    private EmailQueueService emailQueueService; // Injeta o EmailQueueService
 
     public void sendEmail(String to, String subject, String body) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
@@ -33,19 +34,24 @@ public class EmailService {
 
     public void sendConfirmationEmail(User user) {
         String confirmationLink = generateConfirmationLink(user);
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(user.getEmail());
-        message.setSubject("Confirmação de E-mail");
-        message.setText("Olá " + user.getName() + ",\n\nPor favor, clique no link a seguir para confirmar seu e-mail:\n" + confirmationLink);
 
+        MimeMessage message;
         try {
+            message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            helper.setTo(user.getEmail());
+            helper.setSubject("Email Confirmation");
+            helper.setText("Hello " + user.getName()
+                    + ",\n\nPlease click the following link to confirm your email:\n" + confirmationLink, true);
+
             mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new EmailCreationException("Failed to create confirmation email message", e);
         } catch (MailException e) {
-            // Se o envio falhar, enfileira o e-mail para envio posterior
-            System.err.println("Failed to send confirmation email: " + e.getMessage());
-            emailQueueService.sendEmailToQueue(user.getEmail(), 
-                "Confirmação de E-mail", 
-                message.getText());
+
+            emailQueueService.sendEmailToQueue(user.getEmail(), "Email Confirmation", "Hello " + user.getName()
+                    + ",\n\nPlease click the following link to confirm your email:\n" + confirmationLink);
+            throw e;
         }
     }
 
@@ -54,18 +60,23 @@ public class EmailService {
     }
 
     public void sendResetPasswordEmail(User user, String resetPasswordLink) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(user.getEmail());
-        message.setSubject("Email to Reset Password");
-        message.setText("Olá " + user.getName() + ",\n\nPlease, click on link to follow reset password:\n" + resetPasswordLink);
-
         try {
-            mailSender.send(message);
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
+
+            helper.setTo(user.getEmail());
+            helper.setSubject("Password Reset");
+            helper.setText("Click the following link to reset your password: " + resetPasswordLink, true);
+
+            mailSender.send(mimeMessage);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Failed to create reset password email message", e);
         } catch (MailException e) {
-            System.err.println("Failed to send reset password email: " + e.getMessage());
-            emailQueueService.sendEmailToQueue(user.getEmail(), 
-                "Email to Reset Password", 
-                message.getText());
+
+            emailQueueService.sendEmailToQueue(user.getEmail(), "Password Reset", resetPasswordLink);
+
+            throw e;
         }
     }
+
 }

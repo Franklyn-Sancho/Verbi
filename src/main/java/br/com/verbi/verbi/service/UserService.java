@@ -47,13 +47,17 @@ public class UserService {
         if (userRepository.existsByEmail(userDto.getEmail())) {
             throw new RuntimeException("Email already in use");
         }
-    
+
         // Cria um novo objeto User a partir do UserDto
         User user = new User();
         user.setEmail(userDto.getEmail());
         user.setName(userDto.getName());
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
-    
+
+        // Gera um token de confirmação
+        String confirmationToken = UUID.randomUUID().toString();
+        user.setEmailConfirmationToken(confirmationToken); // Atribuir o token ao usuário
+
         // Processa a imagem de perfil, se houver
         if (picture != null && !picture.isEmpty()) {
             try {
@@ -63,32 +67,18 @@ public class UserService {
                 throw new RuntimeException("Failed to save picture: " + e.getMessage(), e);
             }
         }
-    
+
+        sendConfirmationEmail(user);
+
         // Salva o usuário no repositório e retorna o objeto User
         return userRepository.save(user);
+
     }
-    
 
     public User save(User user) {
         return userRepository.save(user);
     }
 
-    public void validateEmailUniqueness(String email) {
-        if (userRepository.findByEmail(email).isPresent()) {
-            throw new EmailAlreadyExistsException("Email already exists.");
-        }
-    }
-
-    private void handleProfilePicture(MultipartFile picture, User user) {
-        if (picture != null && !picture.isEmpty()) {
-            try {
-                String pictureUrl = fileService.saveFile(picture, "imageProfile");
-                user.setPicture(pictureUrl);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to save picture: " + e.getMessage(), e);
-            }
-        }
-    }
 
     private String sendConfirmationEmail(User user) {
         try {
@@ -115,24 +105,6 @@ public class UserService {
         user.setName(userDto.getName());
         user.setEmail(userDto.getEmail());
         user.setPassword(passwordEncoder.encode(userDto.getPassword()));
-        return user;
-    }
-
-    public User createUserFromOAuth2(String name, String email, String googleId) {
-        User user = userRepository.findByEmail(email).orElseGet(() -> {
-            User newUser = new User();
-            newUser.setName(name);
-            newUser.setEmail(email);
-            newUser.setGoogleId(googleId);
-            return userRepository.save(newUser);
-        });
-
-        // Atualiza o googleId se necessário
-        if (user.getGoogleId() == null || !user.getGoogleId().equals(googleId)) {
-            user.setGoogleId(googleId);
-            userRepository.save(user);
-        }
-
         return user;
     }
 
