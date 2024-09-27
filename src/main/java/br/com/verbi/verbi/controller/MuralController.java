@@ -25,6 +25,7 @@ import jakarta.persistence.EntityNotFoundException;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
 import java.util.UUID;
 
@@ -60,11 +61,9 @@ public class MuralController {
     }
 
     @GetMapping("/user/{name}")
-    public ResponseEntity<Page<Mural>> getMuralsByUserName(@PathVariable String name, Pageable pageable) {
+    public ResponseEntity<Page<Mural>> getMuralsByUserName(@PathVariable String name,
+            @PageableDefault(size = 10) Pageable pageable) {
         Page<Mural> murals = muralService.findMuralsByUserName(name, pageable);
-        if (murals.isEmpty()) {
-            return ResponseEntity.noContent().build(); // Retorna 204 se não encontrar murais
-        }
         return ResponseEntity.ok(murals);
     }
 
