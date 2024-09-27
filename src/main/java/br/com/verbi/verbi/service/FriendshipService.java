@@ -45,8 +45,14 @@ public class FriendshipService {
         Friendship friendship = friendshipRepository.findById(friendshipId)
                 .orElseThrow(() -> new EntityNotFoundException("Friendship not found"));
 
+        System.out.println("Friendship before save: " + friendship);
+
         friendship.setStatus(FriendshipStatus.ACCEPTED);
-        return friendshipRepository.save(friendship);
+        Friendship savedFriendship = friendshipRepository.save(friendship);
+
+        System.out.println("Friendship after save: " + savedFriendship);
+
+        return savedFriendship;
     }
 
     public Friendship declineFriendRequest(UUID friendshipId) {

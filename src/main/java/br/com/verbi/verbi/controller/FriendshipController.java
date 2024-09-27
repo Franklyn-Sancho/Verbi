@@ -35,7 +35,7 @@ public class FriendshipController {
     private UserService userService;
 
     @PostMapping("/send/{receiverId}")
-    public ResponseEntity<Friendship> sendFriendRequest(@PathVariable UUID receiverId,
+    public ResponseEntity<String> sendFriendRequest(@PathVariable UUID receiverId,
             @RequestHeader("Authorization") String token) {
 
         String actualToken = token.substring(7);
@@ -43,23 +43,22 @@ public class FriendshipController {
         User sender = userService.findUserByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        Friendship friendship = friendshipService.sendFriendRequest(sender.getId(), receiverId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(friendship);
+        friendshipService.sendFriendRequest(sender.getId(), receiverId);
+        return ResponseEntity.status(HttpStatus.CREATED).body("Friend request sent successfully");
     }
 
     @PostMapping("/accept/{friendshipId}")
-    public ResponseEntity<Friendship> acceptFriendRequest(@PathVariable UUID friendshipId) {
-        Friendship friendship = friendshipService.acceptFriendRequest(friendshipId);
-        return ResponseEntity.ok(friendship);
+    public ResponseEntity<String> acceptFriendRequest(@PathVariable UUID friendshipId) {
+        friendshipService.acceptFriendRequest(friendshipId);
+        return ResponseEntity.ok("Friend request accepted successfully");
     }
 
     @PostMapping("/decline/{friendshipId}")
-    public ResponseEntity<Friendship> declineFriendRequest(@PathVariable UUID friendshipId) {
-        Friendship friendship = friendshipService.declineFriendRequest(friendshipId);
-        return ResponseEntity.ok(friendship);
+    public ResponseEntity<String> declineFriendRequest(@PathVariable UUID friendshipId) {
+        friendshipService.declineFriendRequest(friendshipId);
+        return ResponseEntity.ok("Friend request declined successfully");
     }
 
-    // Listar amizades de um usuário
     @GetMapping("/friends")
     public ResponseEntity<List<Friendship>> getFriends(@RequestHeader("Authorization") String token) {
         String actualToken = token.substring(7);
