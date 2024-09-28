@@ -15,8 +15,11 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import java.util.HashSet;
+import br.com.verbi.verbi.enums.FriendshipStatus;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.time.LocalDateTime;
 
 @Entity
@@ -47,6 +50,12 @@ public class User {
     
     private String emailConfirmationToken;
     private LocalDateTime emailConfirmationExpires;
+
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Friendship> sentFriendRequests = new HashSet<>();
+
+    @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Friendship> receivedFriendRequests = new HashSet<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
@@ -185,5 +194,42 @@ public class User {
 
     public void setEmailConfirmationExpires(LocalDateTime emailConfirmationExpires) {
         this.emailConfirmationExpires = emailConfirmationExpires;
+    }
+
+    public Set<Friendship> getSentFriendRequests() {
+        return sentFriendRequests;
+    }
+
+    public void setSentFriendRequests(Set<Friendship> sentFriendRequests) {
+        this.sentFriendRequests = sentFriendRequests;
+    }
+
+    public Set<Friendship> getReceivedFriendRequests() {
+        return receivedFriendRequests;
+    }
+
+    public void setReceivedFriendRequests(Set<Friendship> receivedFriendRequests) {
+        this.receivedFriendRequests = receivedFriendRequests;
+    }
+
+    // Método para obter amigos aceitos
+    public List<User> getFriends() {
+        List<User> friends = new ArrayList<>();
+        
+        // Adiciona todos os amigos aceitos de pedidos enviados
+        for (Friendship friendship : sentFriendRequests) {
+            if (friendship.getStatus() == FriendshipStatus.ACCEPTED) {
+                friends.add(friendship.getReceiver());
+            }
+        }
+        
+        // Adiciona todos os amigos aceitos de pedidos recebidos
+        for (Friendship friendship : receivedFriendRequests) {
+            if (friendship.getStatus() == FriendshipStatus.ACCEPTED) {
+                friends.add(friendship.getSender());
+            }
+        }
+        
+        return friends;
     }
 }

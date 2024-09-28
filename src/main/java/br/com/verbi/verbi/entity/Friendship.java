@@ -3,6 +3,7 @@ package br.com.verbi.verbi.entity;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import br.com.verbi.verbi.enums.FriendshipStatus;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -15,11 +16,7 @@ import jakarta.persistence.ManyToOne;
 @Entity
 public class Friendship {
 
-    public enum FriendshipStatus {
-        PENDING,
-        ACCEPTED,
-        DECLINED
-    }
+    
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

@@ -29,6 +29,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import br.com.verbi.verbi.dto.MuralDto;
 import br.com.verbi.verbi.entity.Mural;
 import br.com.verbi.verbi.entity.User;
+import br.com.verbi.verbi.enums.MuralVisibility;
 import br.com.verbi.verbi.security.JWTGenerator;
 import br.com.verbi.verbi.service.MuralService;
 import br.com.verbi.verbi.service.UserService;
@@ -70,27 +71,30 @@ public class MuralControllerTest {
         mural.setId(UUID.randomUUID());
         mural.setBody("This is a test mural");
         mural.setUser(user);
+        mural.setVisibility(MuralVisibility.GLOBAL); // Define a visibilidade do mural
     }
 
     @Test
     void testCreateMural_Success() throws Exception {
         MuralDto muralDto = new MuralDto();
         muralDto.setBody("This is a test mural");
+        muralDto.setVisibility(MuralVisibility.GLOBAL); // Defina a visibilidade
 
         String token = "Bearer mockedToken";
 
         when(jwtGenerator.getUsername(anyString())).thenReturn(user.getEmail());
         when(userService.findUserByEmail(user.getEmail())).thenReturn(Optional.of(user));
-        when(muralService.createMural(muralDto.getBody(), user)).thenReturn(mural);
+        when(muralService.createMural(muralDto.getBody(), muralDto.getVisibility(), user)).thenReturn(mural);
 
         mockMvc.perform(post("/api/mural/write")
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", token)
-                .content("{\"body\": \"This is a test mural\"}"))
+                .content("{\"body\": \"This is a test mural\", \"visibility\": \"GLOBAL\"}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.body").value("This is a test mural"));
+                .andExpect(jsonPath("$.body").value("This is a test mural"))
+                .andExpect(jsonPath("$.visibility").value("GLOBAL")); // Verifique a visibilidade
 
-        verify(muralService, times(1)).createMural(muralDto.getBody(), user);
+        verify(muralService, times(1)).createMural(muralDto.getBody(), muralDto.getVisibility(), user);
     }
 
     @Test
@@ -98,6 +102,7 @@ public class MuralControllerTest {
         UUID muralId = mural.getId();
         MuralDto muralDto = new MuralDto();
         muralDto.setBody("Updated mural body");
+        muralDto.setVisibility(MuralVisibility.FRIENDS_ONLY); // Defina a nova visibilidade
 
         String token = "Bearer mockedToken";
 
@@ -105,19 +110,24 @@ public class MuralControllerTest {
         when(userService.findUserByEmail(user.getEmail())).thenReturn(Optional.of(user));
         when(muralService.updateMural(eq(muralId), any(MuralDto.class), eq(user))).thenAnswer(invocation -> {
             MuralDto dto = invocation.getArgument(1);
-            mural.setBody(dto.getBody()); // Atualiza o corpo do mural
+            mural.setBody(dto.getBody());
+            mural.setVisibility(dto.getVisibility()); // Atualiza a visibilidade
             return mural;
         });
 
         mockMvc.perform(put("/api/mural/update/{id}", muralId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", token)
-                .content("{\"body\": \"Updated mural body\"}"))
+                .content("{\"body\": \"Updated mural body\", \"visibility\": \"FRIENDS_ONLY\"}")) // Inclui visibilidade
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.body").value("Updated mural body"));
+                .andExpect(jsonPath("$.body").value("Updated mural body"))
+                .andExpect(jsonPath("$.visibility").value("FRIENDS_ONLY")); // Verifica se a visibilidade foi atualizada
+                                                                            // corretamente
 
         verify(muralService, times(1)).updateMural(eq(muralId),
-                argThat(dto -> dto.getBody().equals("Updated mural body")), eq(user));
+                argThat(dto -> dto.getBody().equals("Updated mural body")
+                        && dto.getVisibility() == MuralVisibility.FRIENDS_ONLY),
+                eq(user));
     }
 
     @Test

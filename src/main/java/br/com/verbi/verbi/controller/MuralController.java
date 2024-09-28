@@ -18,6 +18,7 @@ import br.com.verbi.verbi.dto.MuralDto;
 import br.com.verbi.verbi.entity.Mural;
 import br.com.verbi.verbi.entity.User;
 import br.com.verbi.verbi.exception.AccessDeniedException;
+import br.com.verbi.verbi.exception.UserNotFoundException;
 import br.com.verbi.verbi.security.JWTGenerator;
 import br.com.verbi.verbi.service.MuralService;
 import br.com.verbi.verbi.service.UserService;
@@ -27,6 +28,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -40,12 +42,11 @@ public class MuralController {
     private UserService userService;
 
     @Autowired
-    private JWTGenerator jwtGenerator; // Para extrair o email do JWT
+    private JWTGenerator jwtGenerator;
 
-    // Método privado para simplificar extração de usuário a partir do token
     private User extractUserFromToken(String token) {
-        String actualToken = token.substring(7); // Remove o "Bearer " do token
-        String email = jwtGenerator.getUsername(actualToken); // Extrai o email do token
+        String actualToken = token.substring(7);
+        String email = jwtGenerator.getUsername(actualToken);
         return userService.findUserByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
     }
@@ -53,11 +54,12 @@ public class MuralController {
     @PostMapping("/write")
     public ResponseEntity<Mural> createMural(@RequestBody MuralDto muralDto,
             @RequestHeader("Authorization") String token) {
-        User user = extractUserFromToken(token);
-
-        Mural mural = muralService.createMural(muralDto.getBody(), user);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(mural);
+        String username = jwtGenerator.getUsername(token);
+        User user = userService.findUserByEmail(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+        Mural createdMural = muralService.createMural(muralDto.getBody(), muralDto.getVisibility(), user);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdMural); // A visibilidade deve ser parte do mural
+                                                                             // retornado
     }
 
     @GetMapping("/user/{name}")
@@ -89,11 +91,19 @@ public class MuralController {
 
         try {
             muralService.deleteMural(id, user);
-            return ResponseEntity.noContent().build(); // Retorna 204 ao excluir com sucesso
+            return ResponseEntity.noContent().build();
         } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // Retorna 404 se não encontrar o mural
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // Retorna 403 se não tiver permissão
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+    }
+
+    // Método para listar murais visíveis
+    @GetMapping("/visible")
+    public ResponseEntity<List<Mural>> getVisibleMurals(@RequestHeader("Authorization") String token) {
+        User user = extractUserFromToken(token);
+        List<Mural> visibleMurals = muralService.getVisibleMurals(user);
+        return ResponseEntity.ok(visibleMurals);
     }
 }

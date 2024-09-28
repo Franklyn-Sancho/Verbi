@@ -22,6 +22,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import br.com.verbi.verbi.dto.MuralDto;
 import br.com.verbi.verbi.entity.Mural;
 import br.com.verbi.verbi.entity.User;
+import br.com.verbi.verbi.enums.MuralVisibility;
+import br.com.verbi.verbi.exception.UserNotFoundException;
 import br.com.verbi.verbi.repository.MuralRepository;
 
 public class MuralServiceTest {
@@ -43,27 +45,38 @@ public class MuralServiceTest {
     @Test
     public void testCreateMural_ValidInput() {
         String body = "This is a mural post";
+        MuralVisibility visibility = MuralVisibility.GLOBAL; // Defina a visibilidade aqui
         User user = new User();
         user.setId(UUID.randomUUID());
 
         Mural mural = new Mural();
         mural.setBody(body);
+        mural.setVisibility(visibility); // Defina a visibilidade no mural
         mural.setUser(user);
 
         when(muralRepository.save(any(Mural.class))).thenReturn(mural);
 
-        Mural createdMural = muralService.createMural(body, user);
+        Mural createdMural = muralService.createMural(body, visibility, user); // Passe a visibilidade aqui
 
         assertEquals(mural.getBody(), createdMural.getBody());
+        assertEquals(mural.getVisibility(), createdMural.getVisibility()); // Verifique se a visibilidade está
+                                                                               // correta
         verify(muralRepository).save(any(Mural.class));
     }
 
     @Test
     public void testCreateMural_UserNotFound() {
+        String body = "Mural Body";
+        MuralVisibility visibility = MuralVisibility.GLOBAL; // Defina a visibilidade aqui
+
         // Simule a condição em que o usuário não é encontrado
         when(userService.findUserByEmail(anyString())).thenReturn(Optional.empty());
 
-        muralService.createMural("Mural Body", null); // Passando null para simular usuário não encontrado
+        // Tente criar um mural com um usuário não encontrado e verifique se uma exceção
+        // é lançada
+        assertThrows(UserNotFoundException.class, () -> {
+            muralService.createMural(body, visibility, null); // Você pode passar um valor de visibilidade padrão
+        });
     }
 
     @Test

@@ -9,10 +9,11 @@ import org.springframework.stereotype.Repository;
 
 import br.com.verbi.verbi.entity.Friendship;
 import br.com.verbi.verbi.entity.User;
+import br.com.verbi.verbi.enums.FriendshipStatus;
 
 @Repository
 public interface FriendshipRepository extends JpaRepository<Friendship, UUID> {
-    List<Friendship> findBySenderOrReceiverAndStatus(User sender, User receiver, Friendship.FriendshipStatus status);
+    List<Friendship> findBySenderOrReceiverAndStatus(User sender, User receiver, FriendshipStatus status);
 
     Optional<Friendship> findBySenderAndReceiver(User sender, User receiver);
 

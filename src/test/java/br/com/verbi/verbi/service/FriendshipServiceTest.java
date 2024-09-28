@@ -20,8 +20,8 @@ import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import br.com.verbi.verbi.entity.Friendship;
-import br.com.verbi.verbi.entity.Friendship.FriendshipStatus;
 import br.com.verbi.verbi.entity.User;
+import br.com.verbi.verbi.enums.FriendshipStatus;
 import br.com.verbi.verbi.repository.FriendshipRepository;
 
 @SpringBootTest

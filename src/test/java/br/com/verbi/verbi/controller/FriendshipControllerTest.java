@@ -30,6 +30,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import br.com.verbi.verbi.entity.Friendship;
 import br.com.verbi.verbi.entity.User;
+import br.com.verbi.verbi.enums.FriendshipStatus;
 import br.com.verbi.verbi.exceptionhandler.GlobalExceptionHandler;
 import br.com.verbi.verbi.security.JWTGenerator;
 import br.com.verbi.verbi.service.FriendshipService;
@@ -75,7 +76,7 @@ public class FriendshipControllerTest {
         friendship.setId(UUID.randomUUID());
         friendship.setSender(sender);
         friendship.setReceiver(new User());
-        friendship.setStatus(Friendship.FriendshipStatus.PENDING);
+        friendship.setStatus(FriendshipStatus.PENDING);
 
         receiverId = UUID.randomUUID();
         friendshipId = UUID.randomUUID();
@@ -98,7 +99,7 @@ public class FriendshipControllerTest {
 
     @Test
     public void testAcceptFriendRequest_Success() throws Exception {
-        friendship.setStatus(Friendship.FriendshipStatus.ACCEPTED);
+        friendship.setStatus(FriendshipStatus.ACCEPTED);
         when(friendshipService.acceptFriendRequest(any(UUID.class))).thenReturn(friendship);
 
         mockMvc.perform(post("/api/friendship/accept/{friendshipId}", friendshipId))
@@ -110,7 +111,7 @@ public class FriendshipControllerTest {
 
     @Test
     public void testDeclineFriendRequest_Success() throws Exception {
-        friendship.setStatus(Friendship.FriendshipStatus.DECLINED);
+        friendship.setStatus(FriendshipStatus.DECLINED);
         when(friendshipService.declineFriendRequest(any(UUID.class))).thenReturn(friendship);
 
         mockMvc.perform(post("/api/friendship/decline/{friendshipId}", friendshipId))
@@ -134,7 +135,7 @@ public class FriendshipControllerTest {
         mockMvc.perform(get("/api/friendship/friends")
                 .header("Authorization", token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].status").value(Friendship.FriendshipStatus.PENDING.toString()));
+                .andExpect(jsonPath("$[0].status").value(FriendshipStatus.PENDING.toString()));
 
         verify(friendshipService, times(1)).getFriends(sender);
     }
