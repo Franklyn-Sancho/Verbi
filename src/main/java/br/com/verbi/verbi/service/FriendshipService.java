@@ -1,5 +1,6 @@
 package br.com.verbi.verbi.service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,6 +43,7 @@ public class FriendshipService {
     }
 
     public Friendship acceptFriendRequest(UUID friendshipId) {
+
         Friendship friendship = friendshipRepository.findById(friendshipId)
                 .orElseThrow(() -> new EntityNotFoundException("Friendship not found"));
 
@@ -52,7 +54,7 @@ public class FriendshipService {
 
         System.out.println("Friendship after save: " + savedFriendship);
 
-        return savedFriendship;
+        return savedFriendship; // Retorna a amizade atualizada
     }
 
     public Friendship declineFriendRequest(UUID friendshipId) {
@@ -65,6 +67,17 @@ public class FriendshipService {
 
     public List<Friendship> getFriends(User user) {
         return friendshipRepository.findBySenderOrReceiverAndStatus(user, user, FriendshipStatus.ACCEPTED);
+    }
+
+    public boolean areFriends(UUID userId1, UUID userId2) {
+        User user1 = userService.findUserById(userId1)
+                .orElseThrow(() -> new UsernameNotFoundException("User 1 not found"));
+        User user2 = userService.findUserById(userId2)
+                .orElseThrow(() -> new UsernameNotFoundException("User 2 not found"));
+
+        return friendshipRepository.findBySenderAndReceiver(user1, user2)
+                .filter(friendship -> friendship.getStatus() == FriendshipStatus.ACCEPTED)
+                .isPresent();
     }
 
 }

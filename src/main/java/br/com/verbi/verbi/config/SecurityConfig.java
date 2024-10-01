@@ -35,9 +35,10 @@ public class SecurityConfig {
                                                 .requestMatchers("/api/user/register", "/api/user/login", "/oauth/**")
                                                 .permitAll()
                                                 .requestMatchers("/login/oauth2/code/google", "/oauth2/**").permitAll()
+                                                .requestMatchers("/ws/**").permitAll() // Permita o WebSocket aqui
                                                 // Rotas protegidas
                                                 .requestMatchers("/api/user/logout", "/api/mural/**",
-                                                                "/api/friendship/**") // Adicionando rotas de amizade
+                                                                "/api/friendship/**")
                                                 .authenticated()
                                                 .anyRequest().authenticated())
                                 // Configura login com OAuth2
@@ -60,7 +61,7 @@ public class SecurityConfig {
 
                 return http.build();
         }
-        
+
         @Bean
         public AuthenticationSuccessHandler oAuth2LoginSuccessHandler() {
                 return new OAuth2LoginSuccessHandlerController(jwtGenerator, userService);
