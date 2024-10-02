@@ -4,6 +4,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -29,9 +31,9 @@ public class Chat {
     private User user2;
 
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private Set<Message> messages = new HashSet<>();
 
-    // Construtores
     public Chat() {}
 
     public Chat(User user1, User user2) {
@@ -39,7 +41,6 @@ public class Chat {
         this.user2 = user2;
     }
 
-    // Getters e Setters
     public UUID getId() {
         return id;
     }

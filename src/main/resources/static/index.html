@@ -1,41 +1,119 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teste WebSocket</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <title>Chat WebSocket</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        #messages {
+            border: 1px solid #ccc;
+            height: 300px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+    </style>
 </head>
+
 <body>
-    <h1>Teste de WebSocket</h1>
-    <input type="text" id="message" placeholder="Digite sua mensagem" />
-    <button id="send">Enviar Mensagem</button>
-    <div id="messages"></div>
+
+    <h1>Chat WebSocket</h1>
+
+    <div id="login">
+        <h2>Login</h2>
+        <input type="email" id="email" placeholder="Email" required />
+        <input type="password" id="password" placeholder="Password" required />
+        <button onclick="login()">Login</button>
+    </div>
+
+    <div id="chat" style="display: none;">
+        <h2>Chat</h2>
+        <div id="messages"></div>
+        <input type="text" id="messageInput" placeholder="Type a message..." />
+        <button onclick="sendMessage()">Send</button>
+    </div>
 
     <script>
-        const socket = new SockJS('/ws'); // Altere o endpoint se necessário
-        const stompClient = Stomp.over(socket);
+        let stompClient = null;
+        let jwtToken = null;
+        const chatId = '637973cd-8b40-482d-8180-a07ecfd99005'; // Chat ID can be set dynamically if needed
 
-        stompClient.connect({}, function (frame) {
-            console.log('Conectado: ' + frame);
+        function setConnected(connected) {
+            document.getElementById('chat').style.display = connected ? 'block' : 'none';
+            document.getElementById('login').style.display = connected ? 'none' : 'block';
+            document.getElementById('messages').innerHTML = '';
+        }
 
-            stompClient.subscribe('/topic/chat/1', function (message) { // Altere para seu tópico
-                const msgDiv = document.getElementById('messages');
-                const msg = JSON.parse(message.body);
-                msgDiv.innerHTML += '<p>' + msg.content + '</p>'; // Exiba a mensagem
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            fetch('http://localhost:8080/api/user/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Login failed: ' + response.statusText); // Detailed error message
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    jwtToken = data.token; // Assume the token is returned in this format
+                    connect();
+                })
+                .catch(error => {
+                    alert(error.message);
+                });
+        }
+
+        function connect() {
+            const socket = new SockJS('http://localhost:8080/ws');
+            stompClient = Stomp.over(socket);
+
+            stompClient.connect({ Authorization: `Bearer ${jwtToken}` }, function (frame) {
+                console.log('Connected: ' + frame);
+                setConnected(true);
+                stompClient.subscribe(`/topic/messages/${chatId}`, function (message) {
+                    showMessage(JSON.parse(message.body));
+                });
             });
-        });
+        }
 
-        document.getElementById('send').onclick = function () {
-            const msgInput = document.getElementById('message');
-            const message = {
-                chatId: '1', // Altere conforme necessário
-                content: msgInput.value
-            };
-            stompClient.send("/app/sendMessage", {}, JSON.stringify(message));
-            msgInput.value = '';
-        };
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const messageContent = messageInput.value.trim(); // Remove espaços em branco
+
+            if (messageContent) { // Verifica se não está enviando mensagens vazias
+                // Usando o caminho correto para enviar a mensagem
+                stompClient.send(`/app/sendMessage/${chatId}`, {
+                    Authorization: `Bearer ${jwtToken}` // Envia o token de autorização
+                }, JSON.stringify({ content: messageContent })); // Enviar a mensagem como um objeto JSON
+
+                messageInput.value = ''; // Limpa o campo de entrada após enviar
+            } else {
+                alert('Please enter a message.'); // Alerta se tentar enviar uma mensagem vazia
+            }
+        }
+
+
+        function showMessage(message) {
+            const messageElement = document.createElement('div');
+            messageElement.textContent = `${message.senderId}: ${message.content} (${new Date(message.timestamp).toLocaleTimeString()})`;
+            document.getElementById('messages').appendChild(messageElement);
+        }
     </script>
+
 </body>
+
 </html>

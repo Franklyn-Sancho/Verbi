@@ -23,6 +23,9 @@ public class FriendshipService {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private ChatService chatService;
+
     public Friendship sendFriendRequest(UUID senderId, UUID receiverId) {
         User sender = userService.findUserById(senderId)
                 .orElseThrow(() -> new UsernameNotFoundException("Sender not found"));
@@ -43,16 +46,14 @@ public class FriendshipService {
     }
 
     public Friendship acceptFriendRequest(UUID friendshipId) {
-
         Friendship friendship = friendshipRepository.findById(friendshipId)
                 .orElseThrow(() -> new EntityNotFoundException("Friendship not found"));
-
-        System.out.println("Friendship before save: " + friendship);
 
         friendship.setStatus(FriendshipStatus.ACCEPTED);
         Friendship savedFriendship = friendshipRepository.save(friendship);
 
-        System.out.println("Friendship after save: " + savedFriendship);
+        // Criar o chat automaticamente
+        chatService.createChat(savedFriendship.getSender(), savedFriendship.getReceiver());
 
         return savedFriendship; // Retorna a amizade atualizada
     }
@@ -75,9 +76,14 @@ public class FriendshipService {
         User user2 = userService.findUserById(userId2)
                 .orElseThrow(() -> new UsernameNotFoundException("User 2 not found"));
 
-        return friendshipRepository.findBySenderAndReceiver(user1, user2)
+        boolean areFriends = friendshipRepository.findBySenderAndReceiver(user1, user2)
                 .filter(friendship -> friendship.getStatus() == FriendshipStatus.ACCEPTED)
-                .isPresent();
+                .isPresent()
+                || friendshipRepository.findBySenderAndReceiver(user2, user1)
+                        .filter(friendship -> friendship.getStatus() == FriendshipStatus.ACCEPTED)
+                        .isPresent();
+
+        return areFriends;
     }
 
 }

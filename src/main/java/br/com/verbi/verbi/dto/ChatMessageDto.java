@@ -7,7 +7,6 @@ public class ChatMessageDto {
     private UUID receiverId;
     private String content;
 
-    // Construtores
     public ChatMessageDto() {}
 
     public ChatMessageDto(UUID senderId, UUID receiverId, String content) {
@@ -16,7 +15,6 @@ public class ChatMessageDto {
         this.content = content;
     }
 
-    // Getters e Setters
     public UUID getSenderId() {
         return senderId;
     }

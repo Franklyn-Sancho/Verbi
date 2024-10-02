@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Optional;
 
 import org.springframework.security.core.Authentication;
-
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -54,6 +54,9 @@ public class OAuth2LoginSuccessHandlerController implements AuthenticationSucces
             user.setPicture(picture);
             userService.save(user); // Salvar o novo usuário
         }
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
 
         // Gerar um token JWT para o usuário
         String token = jwtGenerator.generateToken(user.getEmail());

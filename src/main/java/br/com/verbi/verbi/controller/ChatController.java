@@ -1,14 +1,21 @@
 package br.com.verbi.verbi.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import br.com.verbi.verbi.dto.ChatDto;
 import br.com.verbi.verbi.dto.CreateChatRequest;
+import br.com.verbi.verbi.dto.CreateMessageRequest;
 import br.com.verbi.verbi.entity.Chat;
+import br.com.verbi.verbi.entity.Message;
 import br.com.verbi.verbi.entity.User;
 import br.com.verbi.verbi.service.ChatService;
+import br.com.verbi.verbi.service.MessageService;
 import br.com.verbi.verbi.service.UserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +32,11 @@ public class ChatController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private MessageService messageService;
+
+    
 
     @PostMapping
     public ChatDto createChat(@RequestBody CreateChatRequest request) {

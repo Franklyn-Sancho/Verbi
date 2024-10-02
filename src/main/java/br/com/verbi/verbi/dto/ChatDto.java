@@ -7,7 +7,7 @@ public class ChatDto {
     private UUID user1Id;
     private UUID user2Id;
 
-    // Construtores
+    
     public ChatDto() {}
 
     public ChatDto(UUID id, UUID user1Id, UUID user2Id) {
@@ -16,7 +16,7 @@ public class ChatDto {
         this.user2Id = user2Id;
     }
 
-    // Getters e Setters
+    
     public UUID getId() {
         return id;
     }

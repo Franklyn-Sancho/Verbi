@@ -3,6 +3,7 @@ package br.com.verbi.verbi.entity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -13,6 +14,7 @@ import java.util.Set;
 
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import br.com.verbi.verbi.enums.FriendshipStatus;
@@ -47,17 +49,21 @@ public class User {
     private LocalDateTime resetPasswordExpires;
 
     private String googleId;
-    
+
     private String emailConfirmationToken;
     private LocalDateTime emailConfirmationExpires;
 
     @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    @JsonIgnore
     private Set<Friendship> sentFriendRequests = new HashSet<>();
 
     @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    @JsonIgnore
     private Set<Friendship> receivedFriendRequests = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private Set<Mural> murals = new HashSet<>();
 
@@ -137,21 +143,21 @@ public class User {
 
     public void setDeletionDate(LocalDateTime deletionDate) {
         this.deletionDate = deletionDate;
-        
+
     }
 
     public String getResetPasswordToken() {
         return resetPasswordToken;
     }
-    
+
     public void setResetPasswordToken(String resetPasswordToken) {
         this.resetPasswordToken = resetPasswordToken;
     }
-    
+
     public LocalDateTime getResetPasswordExpires() {
         return resetPasswordExpires;
     }
-    
+
     public void setResetPasswordExpires(LocalDateTime resetPasswordExpires) {
         this.resetPasswordExpires = resetPasswordExpires;
     }
@@ -213,23 +219,24 @@ public class User {
     }
 
     // Método para obter amigos aceitos
+    @JsonIgnore
     public List<User> getFriends() {
         List<User> friends = new ArrayList<>();
-        
+
         // Adiciona todos os amigos aceitos de pedidos enviados
         for (Friendship friendship : sentFriendRequests) {
             if (friendship.getStatus() == FriendshipStatus.ACCEPTED) {
                 friends.add(friendship.getReceiver());
             }
         }
-        
+
         // Adiciona todos os amigos aceitos de pedidos recebidos
         for (Friendship friendship : receivedFriendRequests) {
             if (friendship.getStatus() == FriendshipStatus.ACCEPTED) {
                 friends.add(friendship.getSender());
             }
         }
-        
+
         return friends;
     }
 }

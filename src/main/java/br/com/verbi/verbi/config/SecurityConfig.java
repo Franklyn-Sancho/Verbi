@@ -29,32 +29,46 @@ public class SecurityConfig {
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
                 http
+                                // Desabilita CSRF, pois usamos JWT
                                 .csrf(csrf -> csrf.disable())
+
+                                // Configura as regras de autorização das rotas
                                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                                                // Rotas sem autenticação
-                                                .requestMatchers("/api/user/register", "/api/user/login", "/oauth/**")
+                                                // Rotas públicas
+                                                .requestMatchers("/api/user/register", "/api/user/login", "/oauth/**",
+                                                                "/index.html")
                                                 .permitAll()
                                                 .requestMatchers("/login/oauth2/code/google", "/oauth2/**").permitAll()
-                                                .requestMatchers("/ws/**").permitAll() // Permita o WebSocket aqui
+                                                .requestMatchers("/ws/**").permitAll() // Permite WebSocket
+
                                                 // Rotas protegidas
                                                 .requestMatchers("/api/user/logout", "/api/mural/**",
+                                                                "/api/messages/**", "/api/chat/**",
                                                                 "/api/friendship/**")
                                                 .authenticated()
+
+                                                // Qualquer outra rota precisa de autenticação
                                                 .anyRequest().authenticated())
+
                                 // Configura login com OAuth2
                                 .oauth2Login(oauth2Login -> oauth2Login
-                                                .successHandler(oAuth2LoginSuccessHandler()) // Manipulador de sucesso
-                                                                                             // para OAuth2
+                                                .successHandler(oAuth2LoginSuccessHandler()) // Handler de sucesso para
+                                                                                             // OAuth2
                                                 .failureUrl("/login?error=true")
                                                 .permitAll())
+
+                                // Configura login tradicional com formulário
                                 .formLogin(formLogin -> formLogin
                                                 .loginPage("/login")
                                                 .permitAll())
+
+                                // Configura logout
                                 .logout(logout -> logout
                                                 .logoutUrl("/logout")
                                                 .logoutSuccessUrl("/login?logout=true")
                                                 .permitAll())
-                                // Filtro para validação de tokens JWT
+
+                                // Adiciona filtros de validação de JWT e blacklist de token
                                 .addFilterBefore(new JwtFilter(jwtGenerator, userService),
                                                 UsernamePasswordAuthenticationFilter.class)
                                 .addFilterBefore(tokenBlacklistFilter, UsernamePasswordAuthenticationFilter.class);
