@@ -3,8 +3,9 @@ package br.com.verbi.verbi.dto;
 import br.com.verbi.verbi.enums.MuralVisibility;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 
-
+@Data
 public class MuralDto {
     
     @NotBlank(message = "Body cannot be empty")

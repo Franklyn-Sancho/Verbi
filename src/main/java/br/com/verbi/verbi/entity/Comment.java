@@ -13,6 +13,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+
+
 @Entity
 @Table(name = "comments")
 public class Comment {
@@ -34,6 +36,11 @@ public class Comment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "mural_id", nullable = false)
     private Mural mural;
+
+    // Construtor padrão
+    public Comment() {
+        this.createdAt = LocalDateTime.now(); // Define a data de criação no momento da criação do comentário
+    }
 
     // Getters e Setters
     public UUID getId() {
@@ -76,3 +83,4 @@ public class Comment {
         this.mural = mural;
     }
 }
+

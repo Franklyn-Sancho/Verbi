@@ -10,12 +10,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import br.com.verbi.verbi.entity.Comment;
-import br.com.verbi.verbi.entity.Mural;
 
+import org.springframework.stereotype.Repository;
+
+@Repository
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
-    
-    Optional<Comment> findById(UUID Id);
 
-     @Query("SELECT c FROM Comment c WHERE c.user.name = :name")
+    // Method to find a comment by its ID
+    Optional<Comment> findById(UUID id);
+
+    // Custom query to find comments by the user's name with pagination
+    @Query("SELECT c FROM Comment c WHERE c.user.name = :name")
     Page<Comment> findCommentsByUserName(@Param("name") String name, Pageable pageable);
 }

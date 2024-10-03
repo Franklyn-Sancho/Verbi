@@ -1,11 +1,14 @@
 package br.com.verbi.verbi.dto;
 
-import java.time.LocalDateTime;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
 
+
+@Data
 public class CommentDto {
 
+    @NotBlank(message = "Content cannot be empty")
     private String content;
-    private LocalDateTime createdAt; // Você pode incluir isso se quiser retornar a data de criação
 
     // Construtores
     public CommentDto() {
@@ -23,13 +26,6 @@ public class CommentDto {
     public void setContent(String content) {
         this.content = content;
     }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 }
+
 

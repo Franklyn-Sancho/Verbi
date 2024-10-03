@@ -3,7 +3,9 @@ package br.com.verbi.verbi.dto;
 import java.util.UUID;
 
 import br.com.verbi.verbi.enums.MuralVisibility;
+import lombok.Data;
 
+@Data
 public class MuralResponseDto {
     private UUID id;
     private String body;
