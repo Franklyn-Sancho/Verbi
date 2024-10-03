@@ -1,12 +1,10 @@
 package br.com.verbi.verbi.entity;
 
-
-import com.fasterxml.jackson.annotation.JsonBackReference;
-
 import br.com.verbi.verbi.enums.MuralVisibility;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,9 +27,8 @@ public class Mural {
     @Enumerated(EnumType.STRING)
     private MuralVisibility visibility;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    @JsonBackReference
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     // Getters and setters
@@ -52,14 +49,6 @@ public class Mural {
         this.body = body;
     }
 
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
     public MuralVisibility getVisibility() {
         return visibility;
     }
@@ -68,4 +57,11 @@ public class Mural {
         this.visibility = visibility;
     }
 
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
 }

@@ -18,18 +18,20 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
+// Repository interface for Mural entity
 @Repository
 public interface MuralRepository extends JpaRepository<Mural, UUID> {
 
+    // Find a mural by its ID
     Optional<Mural> findById(UUID Id);
 
+    // Find murals by user name with pagination support
     @Query("SELECT m FROM Mural m WHERE m.user.name = :name")
     Page<Mural> findMuralsByUserName(@Param("name") String name, Pageable pageable);
 
-     // Método para encontrar murais por visibilidade
+    // Method to find murals by visibility
     List<Mural> findByVisibility(MuralVisibility visibility);
 
-    // Método para encontrar murais de amigos com visibilidade apenas para amigos
+    // Method to find murals of friends with visibility restricted to friends
     List<Mural> findByUserInAndVisibility(List<User> users, MuralVisibility visibility);
-    
 }

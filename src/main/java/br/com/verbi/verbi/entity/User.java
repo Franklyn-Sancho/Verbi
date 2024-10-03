@@ -32,42 +32,49 @@ public class User {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    // Basic user information
     private String name;
     private String email;
     private String picture;
     private String password;
     private String description;
 
+    // Account suspension
     @Column(nullable = false)
     private boolean suspended = false;
     private LocalDateTime suspensionDate;
 
-    private LocalDateTime deleteMarkedDate; // Data em que a conta foi marcada para exclusão
-    private LocalDateTime deletionDate; // Data em que a conta foi realmente excluída
+    // Account deletion details
+    private LocalDateTime deleteMarkedDate;
+    private LocalDateTime deletionDate;
 
+    // Reset password fields
     private String resetPasswordToken;
     private LocalDateTime resetPasswordExpires;
 
+    // Google authentication
     private String googleId;
 
+    // Email confirmation
     private String emailConfirmationToken;
     private LocalDateTime emailConfirmationExpires;
 
+    // Friend requests (sent and received)
     @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    @JsonIgnore
+    @JsonIgnore // Prevent JSON serialization of friend requests
     private Set<Friendship> sentFriendRequests = new HashSet<>();
 
     @OneToMany(mappedBy = "receiver", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    @JsonIgnore
+    @JsonIgnore // Prevent JSON serialization of friend requests
     private Set<Friendship> receivedFriendRequests = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    @JsonManagedReference
+    // User posts (Murals)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<Mural> murals = new HashSet<>();
 
-    // Getters e Setters
+    // Getters and Setters
 
     public UUID getId() {
         return id;
@@ -85,20 +92,20 @@ public class User {
         this.name = name;
     }
 
-    public String getPicture() {
-        return picture;
-    }
-
-    public void setPicture(String picture) {
-        this.picture = picture;
-    }
-
     public String getEmail() {
         return email;
     }
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPicture() {
+        return picture;
+    }
+
+    public void setPicture(String picture) {
+        this.picture = picture;
     }
 
     public String getPassword() {
@@ -109,15 +116,19 @@ public class User {
         this.password = password;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public boolean isSuspended() {
         return suspended;
     }
 
-    public Boolean getSuspended() {
-        return suspended;
-    }
-
-    public void setSuspended(Boolean suspended) {
+    public void setSuspended(boolean suspended) {
         this.suspended = suspended;
     }
 
@@ -143,7 +154,6 @@ public class User {
 
     public void setDeletionDate(LocalDateTime deletionDate) {
         this.deletionDate = deletionDate;
-
     }
 
     public String getResetPasswordToken() {
@@ -170,22 +180,6 @@ public class User {
         this.googleId = googleId;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Set<Mural> getMurals() {
-        return murals;
-    }
-
-    public void setMurals(Set<Mural> murals) {
-        this.murals = murals;
-    }
-
     public String getEmailConfirmationToken() {
         return emailConfirmationToken;
     }
@@ -200,6 +194,14 @@ public class User {
 
     public void setEmailConfirmationExpires(LocalDateTime emailConfirmationExpires) {
         this.emailConfirmationExpires = emailConfirmationExpires;
+    }
+
+    public Set<Mural> getMurals() {
+        return murals;
+    }
+
+    public void setMurals(Set<Mural> murals) {
+        this.murals = murals;
     }
 
     public Set<Friendship> getSentFriendRequests() {
@@ -218,19 +220,18 @@ public class User {
         this.receivedFriendRequests = receivedFriendRequests;
     }
 
-    // Método para obter amigos aceitos
-    @JsonIgnore
+    @JsonIgnore // Ignored to prevent exposing friends in user serialization
     public List<User> getFriends() {
         List<User> friends = new ArrayList<>();
-
-        // Adiciona todos os amigos aceitos de pedidos enviados
+        
+        // Add all accepted friends from sent friend requests
         for (Friendship friendship : sentFriendRequests) {
             if (friendship.getStatus() == FriendshipStatus.ACCEPTED) {
                 friends.add(friendship.getReceiver());
             }
         }
 
-        // Adiciona todos os amigos aceitos de pedidos recebidos
+        // Add all accepted friends from received friend requests
         for (Friendship friendship : receivedFriendRequests) {
             if (friendship.getStatus() == FriendshipStatus.ACCEPTED) {
                 friends.add(friendship.getSender());
@@ -240,3 +241,4 @@ public class User {
         return friends;
     }
 }
+

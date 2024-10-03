@@ -1,9 +1,16 @@
 package br.com.verbi.verbi.dto;
 
 import br.com.verbi.verbi.enums.MuralVisibility;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 
 public class MuralDto {
+    
+    @NotBlank(message = "Body cannot be empty")
     private String body;
+
+    @NotNull(message = "Visibility must be specified")
     private MuralVisibility visibility; // Adicionando a visibilidade
 
     // Getters e Setters
@@ -23,4 +30,5 @@ public class MuralDto {
         this.visibility = visibility;
     }
 }
+
 
