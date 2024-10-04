@@ -2,12 +2,14 @@ package br.com.verbi.verbi.dto;
 
 import java.util.UUID;
 
+import br.com.verbi.verbi.entity.Chat;
+
+// ChatDto.java
 public class ChatDto {
     private UUID id;
     private UUID user1Id;
     private UUID user2Id;
 
-    
     public ChatDto() {}
 
     public ChatDto(UUID id, UUID user1Id, UUID user2Id) {
@@ -16,7 +18,11 @@ public class ChatDto {
         this.user2Id = user2Id;
     }
 
-    
+    // Static factory method for conversion from Chat entity
+    public static ChatDto fromEntity(Chat chat) {
+        return new ChatDto(chat.getId(), chat.getUser1().getId(), chat.getUser2().getId());
+    }
+
     public UUID getId() {
         return id;
     }

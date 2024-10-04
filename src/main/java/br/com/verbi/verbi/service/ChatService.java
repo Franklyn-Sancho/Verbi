@@ -7,11 +7,14 @@ import org.springframework.stereotype.Service;
 
 import br.com.verbi.verbi.entity.Chat;
 import br.com.verbi.verbi.entity.User;
+import br.com.verbi.verbi.exception.InvalidDataException;
+import br.com.verbi.verbi.exception.ResourceNotFoundException;
 import br.com.verbi.verbi.repository.ChatRepository;
 import jakarta.persistence.EntityNotFoundException;
 
 @Service
 public class ChatService {
+
     @Autowired
     private ChatRepository chatRepository;
 
@@ -22,16 +25,19 @@ public class ChatService {
 
     public Chat findChatById(UUID chatId) {
         return chatRepository.findById(chatId)
-            .orElseThrow(() -> new RuntimeException("Chat not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Chat not found"));
     }
 
     public Chat findChatBetweenUsers(User user1, User user2) {
         return chatRepository.findByUser1AndUser2(user1, user2)
-                .orElseThrow(() -> new RuntimeException("Chat not found between these users"));
+                .orElseThrow(() -> new ResourceNotFoundException("Chat not found between these users"));
     }
 
+    // Aqui está a implementação que estava faltando
     public Chat getChatById(UUID chatId) {
-        return chatRepository.findById(chatId)
-                .orElseThrow(() -> new EntityNotFoundException("Chat not found"));
+        // Pode ser um alias para o findChatById
+        return findChatById(chatId);
     }
 }
+
+

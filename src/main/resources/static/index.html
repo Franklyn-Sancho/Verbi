@@ -19,6 +19,11 @@
             margin-bottom: 10px;
             padding: 5px;
         }
+
+        #chat {
+            display: none;
+            /* O chat começa escondido */
+        }
     </style>
 </head>
 
@@ -33,24 +38,26 @@
         <button onclick="login()">Login</button>
     </div>
 
-    <div id="chat" style="display: none;">
+    <div id="chat">
         <h2>Chat</h2>
         <div id="messages"></div>
-        <input type="text" id="messageInput" placeholder="Type a message..." />
-        <button onclick="sendMessage()">Send</button>
+        <input type="text" id="messageInput" placeholder="Digite uma mensagem..." />
+        <button onclick="sendMessage()">Enviar</button>
     </div>
 
     <script>
         let stompClient = null;
         let jwtToken = null;
-        const chatId = '637973cd-8b40-482d-8180-a07ecfd99005'; // Chat ID can be set dynamically if needed
+        const chatId = '637973cd-8b40-482d-8180-a07ecfd99005'; // ID do chat, pode ser dinâmico
 
+        // Função para alterar o estado de conexão
         function setConnected(connected) {
             document.getElementById('chat').style.display = connected ? 'block' : 'none';
             document.getElementById('login').style.display = connected ? 'none' : 'block';
-            document.getElementById('messages').innerHTML = '';
+            document.getElementById('messages').innerHTML = ''; // Limpa mensagens ao conectar
         }
 
+        // Função para autenticar o usuário
         function login() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
@@ -64,12 +71,13 @@
             })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('Login failed: ' + response.statusText); // Detailed error message
+                        throw new Error('Falha no login: ' + response.statusText);
                     }
                     return response.json();
                 })
                 .then(data => {
-                    jwtToken = data.token; // Assume the token is returned in this format
+                    jwtToken = data.token;
+                    console.log('JWT Token:', jwtToken); // Log do token JWT
                     connect();
                 })
                 .catch(error => {
@@ -77,11 +85,14 @@
                 });
         }
 
+
         function connect() {
             const socket = new SockJS('http://localhost:8080/ws');
             stompClient = Stomp.over(socket);
 
-            stompClient.connect({ Authorization: `Bearer ${jwtToken}` }, function (frame) {
+            console.log('stompClient:', stompClient);
+
+            stompClient.connect({ Authorization: jwtToken }, function (frame) {
                 console.log('Connected: ' + frame);
                 setConnected(true);
                 stompClient.subscribe(`/topic/messages/${chatId}`, function (message) {
@@ -90,23 +101,28 @@
             });
         }
 
+
+
+
+
         function sendMessage() {
             const messageInput = document.getElementById('messageInput');
             const messageContent = messageInput.value.trim(); // Remove espaços em branco
 
-            if (messageContent) { // Verifica se não está enviando mensagens vazias
-                // Usando o caminho correto para enviar a mensagem
-                stompClient.send(`/app/sendMessage/${chatId}`, {
+            if (messageContent) {
+                stompClient.send(`/app/send/${chatId}`, {
                     Authorization: `Bearer ${jwtToken}` // Envia o token de autorização
                 }, JSON.stringify({ content: messageContent })); // Enviar a mensagem como um objeto JSON
 
                 messageInput.value = ''; // Limpa o campo de entrada após enviar
             } else {
-                alert('Please enter a message.'); // Alerta se tentar enviar uma mensagem vazia
+                alert('Por favor, digite uma mensagem.'); // Alerta se tentar enviar uma mensagem vazia
             }
         }
 
 
+
+        // Função para exibir mensagens recebidas
         function showMessage(message) {
             const messageElement = document.createElement('div');
             messageElement.textContent = `${message.senderId}: ${message.content} (${new Date(message.timestamp).toLocaleTimeString()})`;

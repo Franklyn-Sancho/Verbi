@@ -1,6 +1,5 @@
 package br.com.verbi.verbi.entity;
 
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -13,7 +12,7 @@ import jakarta.persistence.ManyToOne;
 
 @Entity
 public class Message {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
@@ -30,7 +29,8 @@ public class Message {
 
     private LocalDateTime timestamp;
 
-    public Message() {}
+    public Message() {
+    }
 
     public Message(Chat chat, User sender, String content) {
         this.chat = chat;
@@ -39,6 +39,7 @@ public class Message {
         this.timestamp = LocalDateTime.now();
     }
 
+    // Getters e Setters
     public UUID getId() {
         return id;
     }

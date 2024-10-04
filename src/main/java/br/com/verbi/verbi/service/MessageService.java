@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import br.com.verbi.verbi.entity.Chat;
 import br.com.verbi.verbi.entity.Message;
 import br.com.verbi.verbi.entity.User;
+import br.com.verbi.verbi.exception.UnauthorizedActionException;
 import br.com.verbi.verbi.repository.MessageRepository;
 
 import java.util.List;
@@ -32,26 +33,19 @@ public class MessageService {
         if (sender == null) {
             throw new IllegalArgumentException("Sender cannot be null");
         }
-    
-        UUID receiverId = getReceiverIdFromChat(chatId, sender);
-        if (receiverId == null) {
-            throw new IllegalArgumentException("Receiver ID cannot be null");
-        }
-    
-        // Verifica se o sender é amigo do receptor
-        if (!friendshipService.areFriends(sender.getId(), receiverId)) {
-            throw new IllegalArgumentException("Users are not friends");
-        }
-    
+
         Chat chat = chatService.findChatById(chatId);
+        UUID receiverId = getReceiverIdFromChat(chat, sender);
+        
+        if (!friendshipService.areFriends(sender.getId(), receiverId)) {
+            throw new UnauthorizedActionException("Users are not friends");
+        }
+
         Message message = new Message(chat, sender, content);
         return messageRepository.save(message);
     }
-    
 
-    private UUID getReceiverIdFromChat(UUID chatId, User sender) {
-        Chat chat = chatService.findChatById(chatId);
-        // Retorna o ID do usuário que não é o remetente
+    private UUID getReceiverIdFromChat(Chat chat, User sender) {
         return chat.getUser1().getId().equals(sender.getId()) ? chat.getUser2().getId() : chat.getUser1().getId();
     }
 
@@ -60,4 +54,5 @@ public class MessageService {
         return messageRepository.findByChat(chat);
     }
 }
+
 

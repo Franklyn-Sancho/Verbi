@@ -18,6 +18,7 @@ import jakarta.persistence.OneToMany;
 
 @Entity
 public class Chat {
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
@@ -31,7 +32,6 @@ public class Chat {
     private User user2;
 
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
     private Set<Message> messages = new HashSet<>();
 
     public Chat() {}
@@ -41,6 +41,7 @@ public class Chat {
         this.user2 = user2;
     }
 
+    // Getters e Setters
     public UUID getId() {
         return id;
     }
@@ -73,4 +74,5 @@ public class Chat {
         this.messages = messages;
     }
 }
+
 

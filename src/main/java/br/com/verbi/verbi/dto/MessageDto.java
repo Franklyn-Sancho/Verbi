@@ -3,6 +3,8 @@ package br.com.verbi.verbi.dto;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import br.com.verbi.verbi.entity.Message;
+
 public class MessageDto {
     private UUID id;
     private UUID chatId;
@@ -20,7 +22,17 @@ public class MessageDto {
         this.timestamp = timestamp;
     }
 
-    // Getters e Setters
+    // Static factory method for conversion from Message entity
+    public static MessageDto fromEntity(Message message) {
+        return new MessageDto(
+            message.getId(),
+            message.getChat().getId(),
+            message.getSender().getId(),
+            message.getContent(),
+            message.getTimestamp()
+        );
+    }
+
     public UUID getId() {
         return id;
     }
