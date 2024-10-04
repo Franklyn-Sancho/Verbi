@@ -24,7 +24,7 @@ import br.com.verbi.verbi.entity.User;
 import br.com.verbi.verbi.enums.FriendshipStatus;
 import br.com.verbi.verbi.repository.FriendshipRepository;
 
-/* @SpringBootTest
+@SpringBootTest
 public class FriendshipServiceTest {
 
     @Mock
@@ -32,6 +32,9 @@ public class FriendshipServiceTest {
 
     @Mock
     private UserService userService;
+
+    @Mock
+    private ChatService chatService; 
 
     @InjectMocks
     private FriendshipService friendshipService;
@@ -138,4 +141,4 @@ public class FriendshipServiceTest {
         assertEquals(FriendshipStatus.ACCEPTED, friends.get(0).getStatus());
     }
 
-} */
+} 

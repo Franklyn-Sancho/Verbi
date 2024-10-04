@@ -26,12 +26,22 @@ public class FriendshipService {
     @Autowired
     private ChatService chatService;
 
+    /**
+     * Sends a friend request from one user to another.
+     *
+     * @param senderId   The UUID of the sender.
+     * @param receiverId The UUID of the receiver.
+     * @return The created Friendship entity.
+     * @throws UsernameNotFoundException If the sender or receiver does not exist.
+     * @throws IllegalArgumentException  If a friend request has already been sent.
+     */
     public Friendship sendFriendRequest(UUID senderId, UUID receiverId) {
         User sender = userService.findUserById(senderId)
                 .orElseThrow(() -> new UsernameNotFoundException("Sender not found"));
         User receiver = userService.findUserById(receiverId)
-                .orElseThrow(() -> new UsernameNotFoundException("receiver not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("Receiver not found"));
 
+        // Check if the friendship already exists
         if (friendshipRepository.findBySenderAndReceiver(sender, receiver).isPresent()) {
             throw new IllegalArgumentException("Friend request already sent");
         }
@@ -42,9 +52,15 @@ public class FriendshipService {
         friendship.setStatus(FriendshipStatus.PENDING);
 
         return friendshipRepository.save(friendship);
-
     }
 
+    /**
+     * Accepts a pending friend request.
+     *
+     * @param friendshipId The UUID of the friendship to accept.
+     * @return The updated Friendship entity.
+     * @throws EntityNotFoundException If the friendship does not exist.
+     */
     public Friendship acceptFriendRequest(UUID friendshipId) {
         Friendship friendship = friendshipRepository.findById(friendshipId)
                 .orElseThrow(() -> new EntityNotFoundException("Friendship not found"));
@@ -52,12 +68,19 @@ public class FriendshipService {
         friendship.setStatus(FriendshipStatus.ACCEPTED);
         Friendship savedFriendship = friendshipRepository.save(friendship);
 
-        // Criar o chat automaticamente
+        // Automatically create a chat between the two friends
         chatService.createChat(savedFriendship.getSender(), savedFriendship.getReceiver());
 
-        return savedFriendship; // Retorna a amizade atualizada
+        return savedFriendship;
     }
 
+    /**
+     * Declines a pending friend request.
+     *
+     * @param friendshipId The UUID of the friendship to decline.
+     * @return The updated Friendship entity with declined status.
+     * @throws EntityNotFoundException If the friendship does not exist.
+     */
     public Friendship declineFriendRequest(UUID friendshipId) {
         Friendship friendship = friendshipRepository.findById(friendshipId)
                 .orElseThrow(() -> new EntityNotFoundException("Friendship not found"));
@@ -66,24 +89,36 @@ public class FriendshipService {
         return friendshipRepository.save(friendship);
     }
 
+    /**
+     * Retrieves all friends of a given user.
+     *
+     * @param user The user whose friends are to be retrieved.
+     * @return A list of accepted friendships.
+     */
     public List<Friendship> getFriends(User user) {
         return friendshipRepository.findBySenderOrReceiverAndStatus(user, user, FriendshipStatus.ACCEPTED);
     }
 
+    /**
+     * Checks if two users are friends.
+     *
+     * @param userId1 The UUID of the first user.
+     * @param userId2 The UUID of the second user.
+     * @return True if they are friends, false otherwise.
+     * @throws UsernameNotFoundException If either user does not exist.
+     */
     public boolean areFriends(UUID userId1, UUID userId2) {
         User user1 = userService.findUserById(userId1)
                 .orElseThrow(() -> new UsernameNotFoundException("User 1 not found"));
         User user2 = userService.findUserById(userId2)
                 .orElseThrow(() -> new UsernameNotFoundException("User 2 not found"));
 
-        boolean areFriends = friendshipRepository.findBySenderAndReceiver(user1, user2)
+        // Check both directions of friendship
+        return friendshipRepository.findBySenderAndReceiver(user1, user2)
                 .filter(friendship -> friendship.getStatus() == FriendshipStatus.ACCEPTED)
                 .isPresent()
                 || friendshipRepository.findBySenderAndReceiver(user2, user1)
                         .filter(friendship -> friendship.getStatus() == FriendshipStatus.ACCEPTED)
                         .isPresent();
-
-        return areFriends;
     }
-
 }

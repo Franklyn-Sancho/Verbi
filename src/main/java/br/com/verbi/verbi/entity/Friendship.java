@@ -9,6 +9,7 @@ import br.com.verbi.verbi.enums.FriendshipStatus;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -18,27 +19,24 @@ import jakarta.persistence.ManyToOne;
 @Entity
 public class Friendship {
 
-    
-
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sender_id", nullable = false)
-    @JsonManagedReference
     private User sender; 
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receiver_id", nullable = false)
-    @JsonManagedReference
     private User receiver; 
 
     @Enumerated(EnumType.STRING)
-    private FriendshipStatus status; // Status da amizade: PENDING, ACCEPTED, DECLINED
+    private FriendshipStatus status;
 
     private LocalDateTime createdAt;
 
+    // Getters e Setters
     public UUID getId() {
         return id;
     }
@@ -79,8 +77,10 @@ public class Friendship {
         this.status = status;
     }
 
+    // Default constructor
     public Friendship() {
         this.createdAt = LocalDateTime.now();
         this.status = FriendshipStatus.PENDING;
     }
 }
+

@@ -19,64 +19,63 @@ public class EmailService {
     private JavaMailSender mailSender;
 
     @Autowired
-    private EmailQueueService emailQueueService; // Injeta o EmailQueueService
+    private EmailQueueService emailQueueService; // Injecting EmailQueueService
 
-    public void sendEmail(String to, String subject, String body) throws MessagingException {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
-        helper.setTo(to);
-        helper.setSubject(subject);
-        helper.setText(body, true);
-
-        mailSender.send(message);
-    }
-
-    public void sendConfirmationEmail(User user) {
-        String confirmationLink = generateConfirmationLink(user);
-
-        MimeMessage message;
+    /**
+     * Sends an email using the provided parameters.
+     *
+     * @param to      recipient's email address
+     * @param subject email subject
+     * @param body    email body
+     */
+    public void sendEmail(String to, String subject, String body) {
         try {
-            message = mailSender.createMimeMessage();
+            MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
-            helper.setTo(user.getEmail());
-            helper.setSubject("Email Confirmation");
-            helper.setText("Hello " + user.getName()
-                    + ",\n\nPlease click the following link to confirm your email:\n" + confirmationLink, true);
+
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(body, true);
 
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new EmailCreationException("Failed to create confirmation email message", e);
+            throw new EmailCreationException("Failed to create email message", e);
         } catch (MailException e) {
-
-            emailQueueService.sendEmailToQueue(user.getEmail(), "Email Confirmation", "Hello " + user.getName()
-                    + ",\n\nPlease click the following link to confirm your email:\n" + confirmationLink);
-            throw e;
+            emailQueueService.sendEmailToQueue(to, subject, body); // Send to queue on failure
+            throw new RuntimeException("Failed to send email, queued for later delivery.", e);
         }
     }
 
+    /**
+     * Sends a confirmation email to the user.
+     *
+     * @param user the user to whom the email is sent
+     */
+    public void sendConfirmationEmail(User user) {
+        String confirmationLink = generateConfirmationLink(user);
+        String body = String.format("Hello %s,\n\nPlease click the following link to confirm your email:\n%s",
+                user.getName(), confirmationLink);
+        sendEmail(user.getEmail(), "Email Confirmation", body);
+    }
+
+    /**
+     * Generates a confirmation link for the user.
+     *
+     * @param user the user for whom the confirmation link is generated
+     * @return the confirmation link as a string
+     */
     private String generateConfirmationLink(User user) {
         return "http://localhost:8080/confirm-email/" + user.getEmailConfirmationToken();
     }
 
+    /**
+     * Sends a password reset email to the user.
+     *
+     * @param user            the user to whom the email is sent
+     * @param resetPasswordLink the link for resetting the password
+     */
     public void sendResetPasswordEmail(User user, String resetPasswordLink) {
-        try {
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
-
-            helper.setTo(user.getEmail());
-            helper.setSubject("Password Reset");
-            helper.setText("Click the following link to reset your password: " + resetPasswordLink, true);
-
-            mailSender.send(mimeMessage);
-        } catch (MessagingException e) {
-            throw new RuntimeException("Failed to create reset password email message", e);
-        } catch (MailException e) {
-
-            emailQueueService.sendEmailToQueue(user.getEmail(), "Password Reset", resetPasswordLink);
-
-            throw e;
-        }
+        String body = "Click the following link to reset your password: " + resetPasswordLink;
+        sendEmail(user.getEmail(), "Password Reset", body);
     }
-
 }
